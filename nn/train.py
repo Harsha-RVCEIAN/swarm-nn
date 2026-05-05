@@ -20,8 +20,8 @@ MODEL_PATH = "nn/model.pt"
 SCALER_PATH = "nn/scaler.pkl"
 
 BATCH_SIZE = 32
-EPOCHS = 60
-LR = 1e-3
+EPOCHS = 100
+LR = 3e-4
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -38,7 +38,7 @@ def load_dataset():
         "Network_Bandwidth_Utilization (Mbps)": "Bandwidth_utilization",
         "Task_Waiting_Time (ms)": "Queue_pressure",
         "Number_of_Active_Users": "Active_users",
-        "Response_Time (ms)": "Response_Time"
+        "response_time(ms)": "Response_Time"
     })
 
     features = [
@@ -58,7 +58,12 @@ def load_dataset():
     X = df[features].astype(np.float32).values
     y = df[target].astype(np.float32).values.reshape(-1, 1)
 
-    return X, y
+    # Add these 3 lines
+    y_mean = y.mean()
+    y_std  = y.std()
+    y = (y - y_mean) / y_std
+
+    return X, y, y_mean, y_std
 
 
 # -----------------------------
@@ -82,7 +87,10 @@ def preprocess(X, fit=True):
 def train():
     print("[INFO] Training model...")
 
-    X, y = load_dataset()
+    X, y, y_mean, y_std = load_dataset()
+    # Save them so inference can undo the scaling
+    import json
+    json.dump({'mean': float(y_mean), 'std': float(y_std)}, open('nn/rt_scale.json','w'))
     X = preprocess(X, fit=True)
 
     X_tensor = torch.tensor(X, dtype=torch.float32)

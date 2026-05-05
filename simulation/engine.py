@@ -87,6 +87,10 @@ class SimulationEngine:
 
                 completed_request, actual_rt = server.step(t)
 
+                # 🔥 CRITICAL FIX
+                if actual_rt is not None:
+                    actual_rt = max(actual_rt, 50.0)
+
                 if completed_request is not None:
 
                     state_matrix = completed_request["decision_state"]
