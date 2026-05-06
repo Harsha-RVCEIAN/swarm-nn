@@ -118,7 +118,7 @@ class SimulationEngine:
                 queues = [len(s.queue) for s in self.servers]
                 print(f"[DEBUG] Step {t} | Queues: {queues}")
 
-        print(f"\n[DONE] {scenario.upper()} Simulation Complete")
+        print(f"n[DONE] {scenario.upper()} Simulation Complete")
         self.plot_metrics(scenario)
 
     # -----------------------------

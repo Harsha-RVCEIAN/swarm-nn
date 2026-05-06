@@ -50,4 +50,4 @@ class Buffer:
     # Clear buffer (optional)
     # -----------------------------
     def clear(self):
-        self.buffer.clear()
+        self.buffer.clear() 

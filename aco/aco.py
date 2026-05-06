@@ -39,7 +39,7 @@ class ACO:
         # Zero out servers in cooldown
         for i in range(self.num_servers):
             if self.cooldown[i] > 0:
-                score[i] = 0.0
+                score[i] *= 0.05   # heavily penalized but not dead
                 self.cooldown[i] -= 1
 
         if score.sum() == 0 or np.isnan(score.sum()):
@@ -66,12 +66,13 @@ class ACO:
         self.pheromone[selected_server] += reward
 
         # Isolate on extreme latency
-        if actual_rt > 2000.0:
-            self.pheromone[selected_server] *= 0.1
-            self.cooldown[selected_server] = 20
+        # Only isolate extreme outliers, shorter cooldown
+        if actual_rt > 3500.0:
+            self.pheromone[selected_server] *= 0.3  # was 0.1
+            self.cooldown[selected_server] = 2       # was 20
 
         # Bounds
         self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
 
     def get_pheromone(self):
-        return self.pheromone.copy()   # ← trailing comma removed (was returning a tuple!)
+        return self.pheromone.copy()   # ← trailing comma was here — FIXED

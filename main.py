@@ -55,7 +55,7 @@ def simulate_execution(server_state):
 # -----------------------------
 def run_fake_simulation():
 
-    print("[INFO] Running FAKE simulation...\n")
+    # print("[INFO] Running FAKE simulation...\n")
 
     for step in range(NUM_STEPS):
 
@@ -67,11 +67,11 @@ def run_fake_simulation():
 
         process_feedback(state_matrix, selected_server, actual_rt)
 
-        print(f"Step {step+1}")
-        print(f"Selected Server: {selected_server}")
-        print(f"Predicted RT: {predicted_rt}")
-        print(f"Actual RT: {actual_rt:.2f}")
-        print(f"Probabilities: {probabilities}\n")
+        # print(f"Step {step+1}")
+        # print(f"Selected Server: {selected_server}")
+        # print(f"Predicted RT: {predicted_rt}")
+        # print(f"Actual RT: {actual_rt:.2f}")
+        # print(f"Probabilities: {probabilities}\n")
 
         time.sleep(0.05)
 
@@ -81,7 +81,7 @@ def run_fake_simulation():
 # -----------------------------
 def run_real_simulation(scenario):
 
-    print(f"[INFO] Initializing {scenario.upper()} simulation...\n")
+    # print(f"[INFO] Initializing {scenario.upper()} simulation...\n")
 
     engine = SimulationEngine(num_servers=NUM_SERVERS)
     engine.run(steps=NUM_STEPS, scenario=scenario)
@@ -93,11 +93,11 @@ def run_real_simulation(scenario):
 if __name__ == "__main__":
 
     if USE_REAL_SIMULATION:
-        print("Running all 3 validation scenarios...\n")
+        # print("Running all 3 validation scenarios...\n")
         run_real_simulation('normal')
-        print("\n" + "="*50 + "\n")
+        # print("\n" + "="*50 + "\n")
         run_real_simulation('burst')
-        print("\n" + "="*50 + "\n")
+        # print("\n" + "="*50 + "\n")
         run_real_simulation('adversarial')
     else:
         run_fake_simulation()

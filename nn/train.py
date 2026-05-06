@@ -156,17 +156,23 @@ def train():
 # INCREMENTAL TRAIN (FIXED)
 # -----------------------------
 def train_incremental(X_new, y_new):
-
     if len(X_new) == 0:
         return
 
-    print("Incremental training...")
+    # Load scale params to normalize targets same as training
+    import json
+    scale = json.load(open('nn/rt_scale.json'))
+    y_mean, y_std = scale['mean'], scale['std']
 
     scaler = joblib.load(SCALER_PATH)
+    X_new  = np.nan_to_num(X_new, nan=0.0, posinf=1.0, neginf=0.0)
     X_scaled = scaler.transform(X_new)
 
-    y_new = np.array(y_new).reshape(-1, 1)  # NO scaling
+    y_new = np.array(y_new, dtype=np.float32).reshape(-1, 1)
+    y_new = np.clip(y_new, 50.0, 5000.0)
+    y_new = (y_new - y_mean) / y_std          # ← normalize same as training
 
+    
     X_tensor = torch.tensor(X_scaled, dtype=torch.float32)
     y_tensor = torch.tensor(y_new, dtype=torch.float32)
 
@@ -176,7 +182,7 @@ def train_incremental(X_new, y_new):
     model = ResponseTimeNN(input_dim=5).to(DEVICE)
 
     if os.path.exists(MODEL_PATH):
-        model.load_state_dict(torch.load(MODEL_PATH))
+        model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE, weights_only=True))
 
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
     loss_fn = nn.SmoothL1Loss(beta=0.5)

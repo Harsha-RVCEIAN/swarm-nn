@@ -26,7 +26,7 @@ class Server:
         self.memory_utilization = 0
         self.bandwidth_utilization = 0
         self.active_users = 0
-
+        
     # -----------------------------
     # Add request (bounded queue)
     # -----------------------------

@@ -29,9 +29,7 @@
   --teal: #39d353;
   --accent: #58a6ff;
 }
- 
 * { box-sizing: border-box; margin: 0; padding: 0; }
- 
 body {
   background: var(--bg);
   color: var(--text);
@@ -40,7 +38,6 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
 }
- 
 body::before {
   content: '';
   position: fixed;
@@ -52,9 +49,7 @@ body::before {
   pointer-events: none;
   z-index: 0;
 }
- 
 .app { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 20px; }
- 
 .header {
   display: flex;
   align-items: center;
@@ -77,7 +72,7 @@ body::before {
 .subtitle { font-size: 11px; color: var(--text2); margin-top: 1px; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(63,185,80,0.4)} 50%{opacity:.8;box-shadow:0 0 0 6px rgba(63,185,80,0)} }
- 
+
 .controls {
   display: flex;
   gap: 10px;
@@ -90,8 +85,10 @@ body::before {
   flex-wrap: wrap;
 }
 .ctrl-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-right: 4px; }
- 
+
+/* ── Scenario buttons with tooltip ── */
 .scenario-group { display: flex; gap: 4px; }
+.sc-btn-wrap { position: relative; display: inline-block; }
 .sc-btn {
   padding: 5px 14px;
   border: 1px solid var(--border2);
@@ -107,9 +104,65 @@ body::before {
 .sc-btn.active { background: var(--blue2); border-color: var(--blue); color: #fff; }
 .sc-btn.active.burst { background: #7a3e00; border-color: var(--amber); color: var(--amber); }
 .sc-btn.active.adversarial { background: #3d0a0a; border-color: var(--red); color: var(--red); }
- 
+/* tooltip */
+.sc-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 10px;
+  color: var(--text2);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  z-index: 400;
+  text-align: left;
+  min-width: 200px;
+  line-height: 1.5;
+}
+.sc-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--border2);
+}
+.sc-btn-wrap:hover .sc-tooltip { opacity: 1; }
+
 .divider { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
- 
+
+/* ── Dynamic server count ── */
+.server-count-ctrl { display: flex; align-items: center; gap: 6px; }
+.srv-cnt-btn {
+  width: 22px; height: 22px;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.srv-cnt-btn:hover:not(:disabled) { background: var(--bg3); color: var(--text); border-color: var(--blue); }
+.srv-cnt-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.srv-cnt-display {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--blue);
+  min-width: 18px;
+  text-align: center;
+}
+
 .run-btn {
   padding: 6px 20px;
   border: 1px solid var(--blue);
@@ -126,7 +179,6 @@ body::before {
 .run-btn:hover { background: rgba(31,111,235,0.3); }
 .run-btn.running { border-color: var(--red); background: rgba(248,81,73,0.1); color: var(--red); }
 .run-btn.paused { border-color: var(--amber); background: rgba(210,153,34,0.1); color: var(--amber); }
- 
 .reset-btn {
   padding: 6px 14px;
   border: 1px solid var(--border2);
@@ -139,7 +191,6 @@ body::before {
   transition: all .15s;
 }
 .reset-btn:hover { background: var(--bg3); color: var(--text); }
- 
 .speed-wrap { display: flex; align-items: center; gap: 8px; }
 .speed-wrap input[type=range] {
   width: 80px; accent-color: var(--blue);
@@ -150,21 +201,14 @@ body::before {
   -webkit-appearance: none; width: 12px; height: 12px;
   border-radius: 50%; background: var(--blue); cursor: pointer;
 }
- 
+
 .progress-wrap { margin-bottom: 16px; }
-.progress-track {
-  height: 2px; background: var(--bg3); border-radius: 1px; overflow: hidden; position: relative;
-}
-.progress-fill {
-  height: 100%; width: 0%;
-  background: linear-gradient(90deg, var(--blue2), var(--purple));
-  transition: width .1s; border-radius: 1px;
-}
+.progress-track { height: 2px; background: var(--bg3); border-radius: 1px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--blue2), var(--purple)); transition: width .1s; border-radius: 1px; }
 .progress-info { display: flex; justify-content: space-between; margin-top: 5px; }
 .progress-info span { font-size: 10px; color: var(--text3); }
- 
+
 .main-grid { display: grid; grid-template-columns: 1fr 320px; gap: 14px; margin-bottom: 14px; }
- 
 .network-panel {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -178,12 +222,9 @@ body::before {
 }
 .panel-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
 .panel-badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: var(--bg3); color: var(--text2); }
- 
 #network-canvas { width: 100%; height: 320px; display: block; }
- 
-.metrics-panel {
-  display: flex; flex-direction: column; gap: 10px;
-}
+
+.metrics-panel { display: flex; flex-direction: column; gap: 10px; }
 .metric-card {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -193,25 +234,20 @@ body::before {
   overflow: hidden;
 }
 .metric-card::after {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  border-radius: 2px 0 0 2px;
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 2px 0 0 2px;
 }
 .metric-card.blue::after { background: var(--blue); }
 .metric-card.green::after { background: var(--green); }
 .metric-card.amber::after { background: var(--amber); }
 .metric-card.purple::after { background: var(--purple); }
- 
 .metric-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
 .metric-value { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
 .metric-unit { font-size: 11px; color: var(--text2); margin-left: 4px; font-family: 'JetBrains Mono', monospace; font-weight: 400; }
 .metric-sub { font-size: 10px; color: var(--text3); margin-top: 4px; }
- 
+
 .server-section { margin-bottom: 14px; }
-.server-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
- 
+.server-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+
 .server-card {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -224,30 +260,23 @@ body::before {
 .server-card.selected { border-color: var(--blue); background: rgba(31,111,235,0.05); }
 .server-card.cooldown { border-color: var(--red); background: rgba(248,81,73,0.05); }
 .server-card.degraded { border-color: var(--amber); background: rgba(210,153,34,0.05); }
- 
 .server-card.selected::before {
   content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
+  position: absolute; inset: 0; border-radius: 10px;
   border: 1px solid var(--blue);
   animation: cardpulse .6s ease-out;
   pointer-events: none;
 }
 @keyframes cardpulse { from{opacity:1;transform:scale(1)} to{opacity:0;transform:scale(1.03)} }
- 
+
 .srv-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
 .srv-name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); }
 .srv-id { font-size: 10px; color: var(--text3); }
- 
-.srv-status {
-  font-size: 9px; padding: 2px 7px; border-radius: 4px;
-  font-weight: 500; text-transform: uppercase; letter-spacing: .5px;
-}
+.srv-status { font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
 .srv-status.online { background: var(--green2); color: var(--green); }
 .srv-status.cooldown { background: var(--red2); color: var(--red); }
 .srv-status.degraded { background: var(--amber2); color: var(--amber); }
- 
+
 .bar-section { margin-bottom: 8px; }
 .bar-row { margin-bottom: 5px; }
 .bar-top { display: flex; justify-content: space-between; margin-bottom: 3px; }
@@ -258,30 +287,34 @@ body::before {
 .pheromone-fill { background: var(--blue); }
 .queue-fill { background: var(--red); }
 .prob-fill { background: var(--green); }
- 
+
 .srv-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 8px; }
 .stat { font-size: 10px; color: var(--text3); }
 .stat span { color: var(--text2); font-weight: 500; }
- 
-.charts-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-.chart-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
+
+/* total requests highlight row */
+.srv-total-row {
+  margin-top: 8px;
+  padding: 5px 8px;
+  background: rgba(88,166,255,0.06);
+  border-radius: 5px;
+  border: 1px solid rgba(88,166,255,0.12);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
+.srv-total-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
+.srv-total-val { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--blue); }
+
+.charts-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
 .chart-title { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
 .chart-wrap { position: relative; height: 130px; }
- 
+
 .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
- 
-.pheromone-panel {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
-}
-.phero-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 10px; }
+
+.pheromone-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.phero-grid { display: grid; gap: 8px; margin-top: 10px; }
 .phero-cell { text-align: center; }
 .phero-circle {
   width: 52px; height: 52px; border-radius: 50%;
@@ -293,23 +326,16 @@ body::before {
 }
 .phero-label { font-size: 10px; color: var(--text3); }
 .phero-sublabel { font-size: 9px; color: var(--text3); margin-top: 2px; }
- 
+
 .log-panel {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px;
   display: flex; flex-direction: column;
 }
 .log-body {
   flex: 1; overflow-y: auto; max-height: 160px;
   scrollbar-width: thin; scrollbar-color: var(--bg4) transparent;
 }
-.log-entry {
-  display: flex; gap: 10px; padding: 4px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
-  font-size: 11px; line-height: 1.4;
-}
+.log-entry { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 11px; line-height: 1.4; }
 .log-entry:last-child { border-bottom: none; }
 .log-t { color: var(--text3); min-width: 38px; flex-shrink: 0; }
 .log-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
@@ -318,30 +344,18 @@ body::before {
 .log-msg.warn { color: var(--amber); }
 .log-msg.err  { color: var(--red); }
 .log-msg.ok   { color: var(--green); }
- 
+
 .scenario-banner {
   position: fixed; top: 20px; right: 20px;
   padding: 8px 16px; border-radius: 8px;
   font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
-  opacity: 0; transition: opacity .3s; pointer-events: none;
-  z-index: 100;
+  opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 100;
 }
 .scenario-banner.show { opacity: 1; }
 .scenario-banner.burst { background: var(--amber2); color: var(--amber); border: 1px solid var(--amber); }
 .scenario-banner.adversarial { background: var(--red2); color: var(--red); border: 1px solid var(--red); }
 .scenario-banner.recovery { background: var(--green2); color: var(--green); border: 1px solid var(--green); }
- 
-#packet-canvas { position: absolute; inset: 0; pointer-events: none; }
- 
-.tooltip {
-  position: fixed; pointer-events: none;
-  background: var(--bg3); border: 1px solid var(--border2);
-  border-radius: 6px; padding: 6px 10px;
-  font-size: 11px; color: var(--text);
-  z-index: 200; opacity: 0; transition: opacity .15s;
-}
- 
-/* API error overlay */
+
 .api-error {
   position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
   background: var(--red2); border: 1px solid var(--red);
@@ -349,23 +363,21 @@ body::before {
   font-size: 12px; z-index: 300; display: none;
 }
 .api-error.show { display: block; }
- 
+
 @media(max-width:900px) {
   .main-grid { grid-template-columns: 1fr; }
-  .server-grid { grid-template-columns: repeat(2,1fr); }
   .charts-row { grid-template-columns: 1fr; }
   .bottom-row { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
- 
+
 <div class="scenario-banner" id="scenario-banner"></div>
-<div class="tooltip" id="tooltip"></div>
 <div class="api-error" id="api-error">⚠ API unreachable — check backend</div>
- 
+
 <div class="app">
- 
+
 <!-- Header -->
 <div class="header">
   <div class="header-left">
@@ -380,16 +392,53 @@ body::before {
     <span style="font-size:11px;color:var(--text2)" id="status-text">Ready</span>
   </div>
 </div>
- 
+
 <!-- Controls -->
 <div class="controls">
+  <!-- Scenario buttons with tooltips -->
   <span class="ctrl-label">Scenario</span>
   <div class="scenario-group">
-    <button class="sc-btn active" id="btn-normal" onclick="setScenario('normal',this)">Normal</button>
-    <button class="sc-btn burst" id="btn-burst" onclick="setScenario('burst',this)">Burst</button>
-    <button class="sc-btn adversarial" id="btn-adversarial" onclick="setScenario('adversarial',this)">Adversarial</button>
+    <div class="sc-btn-wrap">
+      <button class="sc-btn active" id="btn-normal" onclick="setScenario('normal',this)">Normal</button>
+      <div class="sc-tooltip">
+        <strong style="color:var(--text)">Normal</strong><br>
+        Steady arrival rate (λ=1.0).<br>
+        Tests baseline ACO+NN routing<br>
+        with stable server conditions.
+      </div>
+    </div>
+    <div class="sc-btn-wrap">
+      <button class="sc-btn burst" id="btn-burst" onclick="setScenario('burst',this)">Burst</button>
+      <div class="sc-tooltip">
+        <strong style="color:var(--amber)">Burst Traffic</strong><br>
+        Steps 100–150: arrival rate jumps<br>
+        to λ=3.0 (3× normal load).<br>
+        Tests adaptation under stress.
+      </div>
+    </div>
+    <div class="sc-btn-wrap">
+      <button class="sc-btn adversarial" id="btn-adversarial" onclick="setScenario('adversarial',this)">Adversarial</button>
+      <div class="sc-tooltip">
+        <strong style="color:var(--red)">Adversarial</strong><br>
+        At step 100 the fastest server<br>
+        is degraded (10% service rate).<br>
+        Tests ACO penalty &amp; rerouting.
+      </div>
+    </div>
   </div>
+
   <div class="divider"></div>
+
+  <!-- Dynamic server count -->
+  <span class="ctrl-label">Servers</span>
+  <div class="server-count-ctrl">
+    <button class="srv-cnt-btn" id="btn-srv-minus" onclick="changeServerCount(-1)" title="Remove server">−</button>
+    <span class="srv-cnt-display" id="srv-cnt-display">4</span>
+    <button class="srv-cnt-btn" id="btn-srv-plus"  onclick="changeServerCount(+1)" title="Add server">+</button>
+  </div>
+
+  <div class="divider"></div>
+
   <span class="ctrl-label">Speed</span>
   <div class="speed-wrap">
     <span style="font-size:10px;color:var(--text3)">1×</span>
@@ -397,11 +446,12 @@ body::before {
     <span style="font-size:10px;color:var(--text3)">6×</span>
     <span style="font-size:11px;color:var(--blue);min-width:24px" id="speed-label">3×</span>
   </div>
+
   <div class="divider"></div>
   <button class="reset-btn" onclick="resetSim()">↺ Reset</button>
   <button class="run-btn" id="run-btn" onclick="toggleRun()">▶ Run Simulation</button>
 </div>
- 
+
 <!-- Progress -->
 <div class="progress-wrap">
   <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
@@ -411,7 +461,7 @@ body::before {
     <span id="time-label">0.0s elapsed</span>
   </div>
 </div>
- 
+
 <!-- Network + Metrics -->
 <div class="main-grid">
   <div class="network-panel">
@@ -421,7 +471,6 @@ body::before {
     </div>
     <canvas id="network-canvas"></canvas>
   </div>
- 
   <div class="metrics-panel">
     <div class="metric-card blue">
       <div class="metric-label">Avg Response Time</div>
@@ -445,28 +494,28 @@ body::before {
     </div>
   </div>
 </div>
- 
+
 <!-- Servers -->
 <div class="server-section">
   <div class="server-grid" id="server-grid"></div>
 </div>
- 
+
 <!-- Charts -->
 <div class="charts-row">
   <div class="chart-card">
     <div class="chart-title">Response Time (ms)</div>
-    <div class="chart-wrap"><canvas id="chart-rt" role="img" aria-label="Response time over time"></canvas></div>
+    <div class="chart-wrap"><canvas id="chart-rt"></canvas></div>
   </div>
   <div class="chart-card">
     <div class="chart-title">Load Variance &amp; Entropy</div>
-    <div class="chart-wrap"><canvas id="chart-ve" role="img" aria-label="Load variance and entropy"></canvas></div>
+    <div class="chart-wrap"><canvas id="chart-ve"></canvas></div>
   </div>
   <div class="chart-card">
     <div class="chart-title">Average Regret (ms)</div>
-    <div class="chart-wrap"><canvas id="chart-reg" role="img" aria-label="Average regret over time"></canvas></div>
+    <div class="chart-wrap"><canvas id="chart-reg"></canvas></div>
   </div>
 </div>
- 
+
 <!-- Bottom -->
 <div class="bottom-row">
   <div class="pheromone-panel">
@@ -476,7 +525,6 @@ body::before {
     </div>
     <div class="phero-grid" id="phero-grid"></div>
   </div>
- 
   <div class="log-panel">
     <div class="panel-header" style="padding:0 0 10px;border:none">
       <span class="panel-title">Event Log</span>
@@ -485,38 +533,61 @@ body::before {
     <div class="log-body" id="log-body"></div>
   </div>
 </div>
- 
-</div><!-- app -->
- 
+
+</div><!-- /app -->
+
 <script>
 // ═══════════════════════════════════════════════════════
-// CONSTANTS  (display-only, no simulation math here)
+// CONFIG
 // ═══════════════════════════════════════════════════════
-const NUM_SERVERS  = 4;
 const NUM_STEPS    = 200;
-const API_BASE     = 'http://localhost:8000';   // ← change if backend runs elsewhere
-const SERVER_COLORS = ['#58a6ff','#3fb950','#bc8cff','#d29922'];
-const SERVER_NAMES  = ['Alpha','Beta','Gamma','Delta'];
- 
-// ── UI state (pure display) ───────────────────────────
-let scenario   = 'normal';
-let currentStep = 0;
-let running    = false;
-let simTimer   = null;
-let tickMs     = 80;
-let startTime  = 0;
+const API_BASE     = 'http://localhost:8000';
+const MIN_SERVERS  = 2;
+const MAX_SERVERS  = 8;
+
+// Server name pool (up to 8)
+const SERVER_NAMES_POOL  = ['Alpha','Beta','Gamma','Delta','Epsilon','Zeta','Eta','Theta'];
+const SERVER_COLORS_POOL = ['#58a6ff','#3fb950','#bc8cff','#d29922','#f85149','#39d353','#ff7b72','#79c0ff'];
+
+// Dynamic server count (default 4, matches backend NUM_SERVERS)
+let numServers = 4;
+
+// ── UI state ──────────────────────────────────────────
+let scenario      = 'normal';
+let currentStep   = 0;
+let running       = false;
+let simTimer      = null;
+let tickMs        = 80;
+let startTime     = 0;
 let chartRt, chartVe, chartReg;
-let packets    = [];
- 
-// History arrays — populated from API responses, used only for charting
-let rtHistory      = [];
-let varHistory     = [];
-let entHistory     = [];
-let regretHistory  = [];
- 
-// Last API response — used for rendering
-let lastState = null;
- 
+let packets       = [];
+
+let rtHistory     = [];
+let varHistory    = [];
+let entHistory    = [];
+let regretHistory = [];
+let lastState     = null;
+
+// ── Helpers ───────────────────────────────────────────
+function serverNames()  { return SERVER_NAMES_POOL.slice(0, numServers); }
+function serverColors() { return SERVER_COLORS_POOL.slice(0, numServers); }
+
+function updateSrvCntUI() {
+  document.getElementById('srv-cnt-display').textContent = numServers;
+  document.getElementById('btn-srv-minus').disabled = (numServers <= MIN_SERVERS);
+  document.getElementById('btn-srv-plus').disabled  = (numServers >= MAX_SERVERS);
+}
+
+function changeServerCount(delta) {
+  const next = numServers + delta;
+  if (next < MIN_SERVERS || next > MAX_SERVERS) return;
+  numServers = next;
+  updateSrvCntUI();
+  // Reset sim so backend & frontend are in sync
+  resetSim();
+  addLog(0, 'info', `Server count changed to ${numServers} — reset`);
+}
+
 // ── API helpers ───────────────────────────────────────
 async function apiStep() {
   const res = await fetch(`${API_BASE}/step`, {
@@ -527,60 +598,69 @@ async function apiStep() {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
- 
+
 async function apiReset() {
   await fetch(`${API_BASE}/reset`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ scenario }),
+    body:    JSON.stringify({ scenario, num_servers: numServers }),
   });
 }
- 
+
 function showApiError(show) {
   document.getElementById('api-error').classList.toggle('show', show);
 }
- 
+
 // ═══════════════════════════════════════════════════════
 // SIMULATION CONTROL
 // ═══════════════════════════════════════════════════════
 async function initSim() {
-  currentStep = 0;
-  running     = false;
-  startTime   = 0;
-  rtHistory   = [];
-  varHistory  = [];
-  entHistory  = [];
+  currentStep   = 0;
+  running       = false;
+  startTime     = 0;
+  rtHistory     = [];
+  varHistory    = [];
+  entHistory    = [];
   regretHistory = [];
-  packets     = [];
-  lastState   = null;
- 
+  packets       = [];
+  lastState     = null;
+
   try {
     await apiReset();
     showApiError(false);
   } catch(e) {
     showApiError(true);
   }
- 
+
   clearLog();
   addLog(0, 'info', 'System initialized — ' + scenario.toUpperCase() + ' scenario');
-  addLog(0, 'info', NUM_SERVERS + ' servers online · backend ACO+NN active');
- 
+  addLog(0, 'info', numServers + ' servers online · backend ACO+NN active');
+
   buildServerCards();
   buildPheroGrid();
   updateProgress();
   updateMetrics(null);
-  drawNetwork([0.25,0.25,0.25,0.25], [1,1,1,1], -1, [false,false,false,false], [false,false,false,false]);
+
+  const eq = 1 / numServers;
+  drawNetwork(
+    Array(numServers).fill(eq),
+    Array(numServers).fill(1),
+    -1,
+    Array(numServers).fill(false),
+    Array(numServers).fill(false)
+  );
   initCharts();
- 
+
   document.getElementById('run-btn').textContent = '▶ Run Simulation';
   document.getElementById('run-btn').className   = 'run-btn';
   document.getElementById('status-text').textContent = 'Ready';
   document.getElementById('arrival-badge').textContent = 'λ = 1.0 req/step';
+  updateSrvCntUI();
 }
- 
+
 async function tick() {
   if (currentStep >= NUM_STEPS) { stopSim(true); return; }
- 
+
   let data;
   try {
     data = await apiStep();
@@ -591,17 +671,15 @@ async function tick() {
     addLog(currentStep, 'err', 'API error — simulation paused');
     return;
   }
- 
-  lastState = data;
+
+  lastState   = data;
   currentStep = data.step;
- 
-  // Accumulate chart history from API
+
   if (data.actual_rt  > 0)    rtHistory.push(data.actual_rt);
   if (data.variance   != null) varHistory.push(data.variance);
   if (data.entropy    != null) entHistory.push(data.entropy);
   if (data.regret     != null) regretHistory.push(data.regret);
- 
-  // Scenario-triggered log messages
+
   if (scenario === 'burst') {
     if (currentStep === 101) { addLog(currentStep,'warn','BURST STARTED · arrival rate ×3'); showBanner('burst','⚡ Burst Traffic'); }
     if (currentStep === 151) { addLog(currentStep,'ok','Burst ended · traffic normalised');   showBanner('recovery','✓ Traffic Normal'); }
@@ -611,22 +689,18 @@ async function tick() {
     addLog(currentStep, 'err', 'Server DEGRADED · adversarial at step 100');
     showBanner('adversarial', '⚠ Server Degraded');
   }
- 
-  // Cooldown detection from per-server state
+
   (data.servers || []).forEach(s => {
-    if (s.degraded && currentStep === 101) {
-      addLog(currentStep, 'err', `Server ${s.id} (${SERVER_NAMES[s.id]}) service rate dropped`);
-    }
+    if (s.degraded && currentStep === 101)
+      addLog(currentStep, 'err', `Server ${s.id} (${serverNames()[s.id] || 'S'+s.id}) service rate dropped`);
   });
- 
-  // Derive display arrays from API response
-  const probs      = data.probabilities  || [0.25,0.25,0.25,0.25];
-  const pheromones = data.pheromones     || [1,1,1,1];
+
+  const probs      = data.probabilities  || Array(numServers).fill(1/numServers);
+  const pheromones = data.pheromones     || Array(numServers).fill(1);
   const selected   = data.selected_server ?? -1;
   const degraded   = (data.servers||[]).map(s => !!s.degraded);
-  // cooldown: server is in cooldown if its pheromone is at minimum (TAU_MIN=0.01)
-  const cooldown   = pheromones.map(p => p <= 0.015);
- 
+  const cooldown   = pheromones.map(p => p <= 0.05);
+
   updateProgress(data);
   updateMetrics(data);
   updateServerCards(data, probs, pheromones, selected, cooldown);
@@ -636,24 +710,24 @@ async function tick() {
   spawnPacket(selected);
   tickPackets();
 }
- 
+
 function toggleRun()  { running ? pauseSim() : startSim(); }
- 
+
 function startSim() {
   if (currentStep >= NUM_STEPS) { initSim().then(() => _doStart()); return; }
   _doStart();
 }
- 
+
 function _doStart() {
   if (!startTime) startTime = Date.now();
-  running   = true;
-  simTimer  = setInterval(tick, tickMs);
+  running  = true;
+  simTimer = setInterval(tick, tickMs);
   document.getElementById('run-btn').textContent = '⏸ Pause';
   document.getElementById('run-btn').className   = 'run-btn running';
   document.getElementById('status-text').textContent = 'Running';
   document.getElementById('status-dot').style.background = 'var(--blue)';
 }
- 
+
 function pauseSim() {
   running = false;
   clearInterval(simTimer);
@@ -662,7 +736,7 @@ function pauseSim() {
   document.getElementById('status-text').textContent = 'Paused';
   document.getElementById('status-dot').style.background = 'var(--amber)';
 }
- 
+
 function stopSim(done) {
   running = false;
   clearInterval(simTimer);
@@ -672,12 +746,12 @@ function stopSim(done) {
   document.getElementById('status-dot').style.background = done ? 'var(--green)' : 'var(--text3)';
   if (done) addLog(currentStep, 'ok', 'Simulation complete · ' + rtHistory.length + ' steps processed');
 }
- 
+
 function resetSim() {
   stopSim(false);
   initSim();
 }
- 
+
 function setScenario(s, btn) {
   if (running) pauseSim();
   scenario = s;
@@ -685,44 +759,50 @@ function setScenario(s, btn) {
   btn.classList.add('active');
   resetSim();
 }
- 
+
 function setSpeed(v) {
   tickMs = [300,150,80,40,20,8][v-1];
   document.getElementById('speed-label').textContent = v + '×';
   if (running) { clearInterval(simTimer); simTimer = setInterval(tick, tickMs); }
 }
- 
+
 // ═══════════════════════════════════════════════════════
-// NETWORK CANVAS  (pure rendering, no ACO math)
+// NETWORK CANVAS
 // ═══════════════════════════════════════════════════════
 function getServerPositions(canvas) {
   const w = canvas.width, h = canvas.height;
   const cx = w/2, cy = h/2;
   const r  = Math.min(w,h) * 0.32;
-  return Array.from({length: NUM_SERVERS}, (_, i) => {
-    const angle = (i / NUM_SERVERS) * Math.PI * 2 - Math.PI / 2;
+  return Array.from({length: numServers}, (_, i) => {
+    const angle = (i / numServers) * Math.PI * 2 - Math.PI / 2;
     return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
   });
 }
- 
+
 function drawNetwork(probs, pheromones, selected, cooldown, degraded) {
-  probs      = probs      || [0.25,0.25,0.25,0.25];
-  pheromones = pheromones || [1,1,1,1];
-  cooldown   = cooldown   || [false,false,false,false];
-  degraded   = degraded   || [false,false,false,false];
- 
+  const n   = numServers;
+  probs      = (probs      || []).slice(0, n);
+  pheromones = (pheromones || []).slice(0, n);
+  cooldown   = (cooldown   || []).slice(0, n);
+  degraded   = (degraded   || []).slice(0, n);
+  while (probs.length      < n) probs.push(1/n);
+  while (pheromones.length < n) pheromones.push(1);
+  while (cooldown.length   < n) cooldown.push(false);
+  while (degraded.length   < n) degraded.push(false);
+
   const canvas = document.getElementById('network-canvas');
   const rect   = canvas.parentElement.getBoundingClientRect();
   canvas.width  = rect.width || 600;
   canvas.height = 320;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
- 
+
   const w = canvas.width, h = canvas.height;
   const cx = w/2, cy = h/2;
   const positions = getServerPositions(canvas);
- 
-  // Connection lines — width/opacity driven by probabilities from API
+  const colors    = serverColors();
+  const names     = serverNames();
+
   positions.forEach((pos, i) => {
     const alpha = 0.08 + probs[i] * 0.35;
     ctx.beginPath();
@@ -734,20 +814,16 @@ function drawNetwork(probs, pheromones, selected, cooldown, degraded) {
     ctx.stroke();
     ctx.setLineDash([]);
   });
- 
-  // Central controller
+
   const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,28);
   grad.addColorStop(0,'rgba(31,111,235,0.4)');
   grad.addColorStop(1,'rgba(31,111,235,0.05)');
   ctx.beginPath();
   ctx.arc(cx, cy, 28, 0, Math.PI*2);
-  ctx.fillStyle = grad;
-  ctx.fill();
+  ctx.fillStyle = grad; ctx.fill();
   ctx.beginPath();
   ctx.arc(cx, cy, 28, 0, Math.PI*2);
-  ctx.strokeStyle = 'rgba(88,166,255,0.5)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
+  ctx.strokeStyle = 'rgba(88,166,255,0.5)'; ctx.lineWidth = 1; ctx.stroke();
   ctx.fillStyle = '#e6edf3';
   ctx.font = '600 11px "Syne", sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -755,37 +831,33 @@ function drawNetwork(probs, pheromones, selected, cooldown, degraded) {
   ctx.font = '400 9px "JetBrains Mono", monospace';
   ctx.fillStyle = 'rgba(139,148,158,0.8)';
   ctx.fillText('ACO+NN', cx, cy+7);
- 
-  // Servers
+
   positions.forEach((pos, i) => {
-    const isSelected   = (i === selected);
-    const isCooldown   = cooldown[i];
-    const isDegraded   = degraded[i];
-    const serverData   = lastState ? (lastState.servers || [])[i] : null;
-    const queueLen     = serverData ? serverData.queue_len : 0;
- 
+    const isSelected = (i === selected);
+    const isCooldown = cooldown[i];
+    const isDegraded = degraded[i];
+    const serverData = lastState ? (lastState.servers || [])[i] : null;
+    const queueLen   = serverData ? serverData.queue_len : 0;
+
     if (isSelected) {
       const glow = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,40);
       glow.addColorStop(0,'rgba(88,166,255,0.2)');
       glow.addColorStop(1,'transparent');
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, 40, 0, Math.PI*2);
-      ctx.fillStyle = glow;
-      ctx.fill();
+      ctx.fillStyle = glow; ctx.fill();
     }
- 
-    // Queue arc
+
     const maxQ  = 10;
     const qFrac = Math.min(queueLen / maxQ, 1);
     if (qFrac > 0) {
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, 26, -Math.PI/2, -Math.PI/2 + qFrac*Math.PI*2);
       ctx.strokeStyle = isCooldown ? 'rgba(248,81,73,0.6)' : 'rgba(248,81,73,0.4)';
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      ctx.lineWidth = 3; ctx.stroke();
     }
- 
-    const color = isCooldown ? '#f85149' : isDegraded ? '#d29922' : SERVER_COLORS[i];
+
+    const color = isCooldown ? '#f85149' : isDegraded ? '#d29922' : colors[i];
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 22, 0, Math.PI*2);
     ctx.fillStyle = isCooldown ? 'rgba(248,81,73,0.15)' : isDegraded ? 'rgba(210,153,34,0.15)' : 'rgba(22,27,34,0.9)';
@@ -793,30 +865,28 @@ function drawNetwork(probs, pheromones, selected, cooldown, degraded) {
     ctx.strokeStyle = color + (isSelected ? '' : '88');
     ctx.lineWidth   = isSelected ? 2 : 1;
     ctx.stroke();
- 
+
     ctx.fillStyle = color;
     ctx.font = '700 10px "Syne", sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(SERVER_NAMES[i], pos.x, pos.y-4);
- 
+    ctx.fillText(names[i], pos.x, pos.y-4);
     ctx.fillStyle = 'rgba(139,148,158,0.8)';
     ctx.font = '400 9px "JetBrains Mono", monospace';
     ctx.fillText('q:' + queueLen, pos.x, pos.y+7);
- 
-    const pct  = (probs[i]*100).toFixed(0) + '%';
+
+    const pct   = (probs[i]*100).toFixed(0) + '%';
     const below = pos.y > cy ? pos.y+36 : pos.y-36;
     ctx.fillStyle = 'rgba(88,166,255,0.7)';
     ctx.font = '400 9px "JetBrains Mono", monospace';
     ctx.fillText(pct, pos.x, below);
- 
+
     if (isCooldown) {
       ctx.fillStyle = '#f85149';
       ctx.font = '9px monospace';
       ctx.fillText('🔴', pos.x+16, pos.y-16);
     }
   });
- 
-  // Packets
+
   packets.forEach(p => {
     ctx.beginPath();
     ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
@@ -824,15 +894,16 @@ function drawNetwork(probs, pheromones, selected, cooldown, degraded) {
     ctx.fill();
   });
 }
- 
+
 function spawnPacket(target) {
   if (target < 0) return;
   const canvas    = document.getElementById('network-canvas');
   const positions = getServerPositions(canvas);
+  if (!positions[target]) return;
   const cx = canvas.width/2, cy = canvas.height/2;
   packets.push({ x:cx, y:cy, tx:positions[target].x, ty:positions[target].y, progress:0, alpha:1 });
 }
- 
+
 function tickPackets() {
   packets = packets.filter(p => {
     p.progress += 0.12;
@@ -843,9 +914,9 @@ function tickPackets() {
   });
 }
 function lerp(a, b, t) { return a + (b-a)*t; }
- 
+
 // ═══════════════════════════════════════════════════════
-// UI UPDATES  (render API data into DOM — no logic)
+// UI UPDATES
 // ═══════════════════════════════════════════════════════
 function updateProgress(data) {
   const step = data ? data.step : 0;
@@ -854,7 +925,6 @@ function updateProgress(data) {
   document.getElementById('step-label').textContent    = `Step ${step} / ${NUM_STEPS}`;
   document.getElementById('time-label').textContent    =
     startTime ? ((Date.now()-startTime)/1000).toFixed(1)+'s elapsed' : '0.0s elapsed';
- 
   let phase = '—';
   if (scenario === 'burst') {
     if (step < 100)      phase = 'Pre-burst (stable)';
@@ -869,39 +939,35 @@ function updateProgress(data) {
   }
   document.getElementById('phase-label').textContent = phase;
 }
- 
+
 function updateMetrics(data) {
   if (!data) {
     ['m-rt','m-var','m-ent','m-reg'].forEach(id => document.getElementById(id).textContent = '—');
     return;
   }
-  const avgRt  = data.actual_rt;
-  const lastVar = data.variance;
-  const lastEnt = data.entropy;
-  const lastReg = data.regret;
- 
-  document.getElementById('m-rt').textContent  = avgRt   ? avgRt.toFixed(0)   : '—';
-  document.getElementById('m-var').textContent = lastVar != null ? lastVar.toFixed(1) : '—';
-  document.getElementById('m-ent').textContent = lastEnt != null ? lastEnt.toFixed(2) : '—';
-  document.getElementById('m-reg').textContent = lastReg ? lastReg.toFixed(0)  : '—';
- 
-  if (avgRt) {
+  document.getElementById('m-rt').textContent  = data.actual_rt   ? data.actual_rt.toFixed(0)   : '—';
+  document.getElementById('m-var').textContent = data.variance    != null ? data.variance.toFixed(1) : '—';
+  document.getElementById('m-ent').textContent = data.entropy     != null ? data.entropy.toFixed(2)  : '—';
+  document.getElementById('m-reg').textContent = data.regret      ? data.regret.toFixed(0)       : '—';
+  if (data.actual_rt) {
     document.getElementById('m-rt-sub').textContent =
-      avgRt < 800 ? '✓ Within target' : avgRt < 1500 ? '~ Moderate load' : '⚠ High latency';
+      data.actual_rt < 800 ? '✓ Within target' : data.actual_rt < 1500 ? '~ Moderate load' : '⚠ High latency';
   }
-  if (lastEnt != null) {
+  if (data.entropy != null) {
     document.getElementById('m-ent-sub').textContent =
-      lastEnt > 1.8 ? 'Uniform distribution' :
-      lastEnt > 1.0 ? 'Moderate preference' : 'Strong preference';
+      data.entropy > 1.8 ? 'Uniform distribution' :
+      data.entropy > 1.0 ? 'Moderate preference' : 'Strong preference';
   }
 }
- 
+
 function buildServerCards() {
-  document.getElementById('server-grid').innerHTML = Array.from({length:NUM_SERVERS},(_,i)=>`
+  const names  = serverNames();
+  const colors = serverColors();
+  document.getElementById('server-grid').innerHTML = Array.from({length:numServers},(_,i)=>`
     <div class="server-card" id="srv-card-${i}">
       <div class="srv-head">
         <div>
-          <div class="srv-name" style="color:${SERVER_COLORS[i]}">${SERVER_NAMES[i]}</div>
+          <div class="srv-name" style="color:${colors[i]}">${names[i]}</div>
           <div class="srv-id" id="srv-id-${i}">srv-0${i} · rate —</div>
         </div>
         <span class="srv-status online" id="srv-status-${i}">online</span>
@@ -916,81 +982,97 @@ function buildServerCards() {
           <div class="bar-track"><div class="bar-fill queue-fill" id="srv-q-${i}" style="width:0%"></div></div>
         </div>
         <div class="bar-row">
-          <div class="bar-top"><span class="bar-lbl">Route prob.</span><span class="bar-val" id="srv-prob-val-${i}">25%</span></div>
-          <div class="bar-track"><div class="bar-fill prob-fill" id="srv-prob-${i}" style="width:25%"></div></div>
+          <div class="bar-top"><span class="bar-lbl">Route prob.</span><span class="bar-val" id="srv-prob-val-${i}">—</span></div>
+          <div class="bar-track"><div class="bar-fill prob-fill" id="srv-prob-${i}" style="width:${(100/numServers).toFixed(1)}%"></div></div>
         </div>
       </div>
       <div class="srv-stats">
         <div class="stat">Last RT: <span id="srv-rt-${i}">—</span></div>
-        <div class="stat">Reqs: <span id="srv-reqs-${i}">0</span></div>
-        <div class="stat">Queue: <span id="srv-queue-${i}">0</span></div>
         <div class="stat">Rate: <span id="srv-rate-${i}">—</span></div>
+        <div class="stat">Queue: <span id="srv-queue-${i}">0</span></div>
+        <div class="stat">Status: <span id="srv-state-${i}">ok</span></div>
+      </div>
+      <!-- Total requests row -->
+      <div class="srv-total-row">
+        <span class="srv-total-label">Total Handled</span>
+        <span class="srv-total-val" id="srv-total-${i}">0</span>
       </div>
     </div>`).join('');
 }
- 
+
 function updateServerCards(data, probs, pheromones, selected, cooldown) {
   if (!data || !data.servers) return;
   const maxP = Math.max(...pheromones, 0.01);
   const maxQ = Math.max(...data.servers.map(s => s.queue_len), 4);
- 
+
   data.servers.forEach((s, i) => {
     const card = document.getElementById('srv-card-'+i);
+    if (!card) return;
     card.className = 'server-card' +
-      (i === selected   ? ' selected' : '') +
-      (cooldown[i]      ? ' cooldown' : '') +
-      (s.degraded       ? ' degraded' : '');
- 
+      (i === selected ? ' selected' : '') +
+      (cooldown[i]    ? ' cooldown' : '') +
+      (s.degraded     ? ' degraded' : '');
+
     const badge = document.getElementById('srv-status-'+i);
     badge.textContent = cooldown[i] ? 'cooldown' : s.degraded ? 'degraded' : 'online';
     badge.className   = 'srv-status ' + (cooldown[i] ? 'cooldown' : s.degraded ? 'degraded' : 'online');
- 
-    document.getElementById('srv-id-'+i).textContent = `srv-0${i} · rate ${s.service_rate.toFixed(2)}`;
-    document.getElementById('srv-pher-'+i).style.width     = (pheromones[i]/maxP*100).toFixed(1)+'%';
-    document.getElementById('srv-pher-val-'+i).textContent  = pheromones[i].toFixed(3);
-    document.getElementById('srv-q-'+i).style.width         = (s.queue_len/maxQ*100).toFixed(1)+'%';
-    document.getElementById('srv-q-val-'+i).textContent     = s.queue_len;
-    document.getElementById('srv-prob-'+i).style.width      = (probs[i]*100).toFixed(1)+'%';
-    document.getElementById('srv-prob-val-'+i).textContent  = (probs[i]*100).toFixed(1)+'%';
-    document.getElementById('srv-rt-'+i).textContent  = s.last_rt != null ? s.last_rt.toFixed(0)+'ms' : '—';
-    document.getElementById('srv-reqs-'+i).textContent = s.total_reqs;
-    document.getElementById('srv-queue-'+i).textContent = s.queue_len;
-    document.getElementById('srv-rate-'+i).textContent  = s.service_rate.toFixed(2);
+
+    document.getElementById('srv-id-'+i).textContent          = `srv-0${i} · rate ${s.service_rate.toFixed(2)}`;
+    document.getElementById('srv-pher-'+i).style.width         = (pheromones[i]/maxP*100).toFixed(1)+'%';
+    document.getElementById('srv-pher-val-'+i).textContent     = pheromones[i].toFixed(3);
+    document.getElementById('srv-q-'+i).style.width            = (s.queue_len/maxQ*100).toFixed(1)+'%';
+    document.getElementById('srv-q-val-'+i).textContent        = s.queue_len;
+    document.getElementById('srv-prob-'+i).style.width         = (probs[i]*100).toFixed(1)+'%';
+    document.getElementById('srv-prob-val-'+i).textContent     = (probs[i]*100).toFixed(1)+'%';
+    document.getElementById('srv-rt-'+i).textContent           = s.last_rt != null ? s.last_rt.toFixed(0)+'ms' : '—';
+    document.getElementById('srv-rate-'+i).textContent         = s.service_rate.toFixed(2);
+    document.getElementById('srv-queue-'+i).textContent        = s.queue_len;
+    document.getElementById('srv-state-'+i).textContent        = s.degraded ? '⚠ degraded' : cooldown[i] ? '🔴 cooldown' : '✓ ok';
+    // Total requests handled
+    document.getElementById('srv-total-'+i).textContent        = s.total_reqs ?? 0;
   });
 }
- 
+
 function buildPheroGrid() {
-  document.getElementById('phero-grid').innerHTML = Array.from({length:NUM_SERVERS},(_,i)=>`
+  const names  = serverNames();
+  const colors = serverColors();
+  // Responsive columns: up to 4 per row
+  const cols = Math.min(numServers, 4);
+  document.getElementById('phero-grid').style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  document.getElementById('phero-grid').innerHTML = Array.from({length:numServers},(_,i)=>`
     <div class="phero-cell">
       <div class="phero-circle" id="phero-circle-${i}">1.000</div>
-      <div class="phero-label" style="color:${SERVER_COLORS[i]}">${SERVER_NAMES[i]}</div>
-      <div class="phero-sublabel" id="phero-prob-${i}">25%</div>
+      <div class="phero-label" style="color:${colors[i]}">${names[i]}</div>
+      <div class="phero-sublabel" id="phero-prob-${i}">${(100/numServers).toFixed(1)}%</div>
     </div>`).join('');
 }
- 
+
 function updatePheroGrid(pheromones, probs, cooldown, degraded) {
-  pheromones = pheromones || [1,1,1,1];
-  probs      = probs      || [0.25,0.25,0.25,0.25];
-  cooldown   = cooldown   || [false,false,false,false];
-  degraded   = degraded   || [false,false,false,false];
+  const n = numServers;
+  pheromones = (pheromones||[]).slice(0,n);
+  probs      = (probs     ||[]).slice(0,n);
+  cooldown   = (cooldown  ||[]).slice(0,n);
+  degraded   = (degraded  ||[]).slice(0,n);
   const maxP = Math.max(...pheromones, 0.01);
- 
+
   pheromones.forEach((p, i) => {
-    const norm   = p / maxP;
+    const norm = p / maxP;
     const r = Math.round(30  + norm*60);
     const g = Math.round(80  + norm*86);
     const b = Math.round(150 + norm*105);
     const bg  = `rgba(${r},${g},${b},${(0.15+norm*0.4).toFixed(2)})`;
     const col = `rgb(${r+50},${g+30},${b})`;
     const circle = document.getElementById('phero-circle-'+i);
+    if (!circle) return;
     circle.style.background  = bg;
     circle.style.color       = col;
     circle.style.borderColor = cooldown[i] ? '#f85149' : degraded[i] ? '#d29922' : col;
     circle.textContent       = p.toFixed(3);
-    document.getElementById('phero-prob-'+i).textContent = (probs[i]*100).toFixed(1)+'%';
+    const pl = document.getElementById('phero-prob-'+i);
+    if (pl) pl.textContent   = (probs[i]*100).toFixed(1)+'%';
   });
 }
- 
+
 // ── Charts ────────────────────────────────────────────
 const CHART_OPTS = () => ({
   responsive: true, maintainAspectRatio: false, animation: false,
@@ -1004,19 +1086,19 @@ const CHART_OPTS = () => ({
     }
   }
 });
- 
+
 function initCharts() {
   if (chartRt)  chartRt.destroy();
   if (chartVe)  chartVe.destroy();
   if (chartReg) chartReg.destroy();
- 
+
   chartRt = new Chart(document.getElementById('chart-rt'), {
     type: 'line',
     data: { labels:[], datasets:[{ data:[], borderColor:'#58a6ff', borderWidth:1.5, pointRadius:0,
       fill:true, tension:0.3, backgroundColor:'rgba(88,166,255,0.06)' }] },
     options: CHART_OPTS()
   });
- 
+
   chartVe = new Chart(document.getElementById('chart-ve'), {
     type: 'line',
     data: { labels:[], datasets:[
@@ -1026,7 +1108,7 @@ function initCharts() {
     options: { ...CHART_OPTS(), plugins:{ legend:{ display:true,
       labels:{ color:'#484f58', font:{size:9}, boxWidth:10, padding:8 } } } }
   });
- 
+
   chartReg = new Chart(document.getElementById('chart-reg'), {
     type: 'line',
     data: { labels:[], datasets:[{ data:[], borderColor:'#d29922', borderWidth:1.5, pointRadius:0,
@@ -1034,31 +1116,31 @@ function initCharts() {
     options: CHART_OPTS()
   });
 }
- 
+
 function updateCharts() {
   if (!chartRt) return;
   const MAX_PTS = 100;
   const stride  = Math.max(1, Math.floor(rtHistory.length / MAX_PTS));
-  const rtD     = rtHistory.filter((_,i) => i%stride===0).slice(-MAX_PTS);
-  const varD    = varHistory.filter((_,i) => i%stride===0).slice(-MAX_PTS);
-  const entD    = entHistory.filter((_,i) => i%stride===0).slice(-MAX_PTS);
-  const regD    = regretHistory.filter((_,i) => i%stride===0).slice(-MAX_PTS);
-  const lbls    = rtD.map((_,i) => i);
- 
-  chartRt.data.labels              = lbls;
-  chartRt.data.datasets[0].data    = rtD;
+  const rtD  = rtHistory.filter((_,i)     => i%stride===0).slice(-MAX_PTS);
+  const varD = varHistory.filter((_,i)    => i%stride===0).slice(-MAX_PTS);
+  const entD = entHistory.filter((_,i)    => i%stride===0).slice(-MAX_PTS);
+  const regD = regretHistory.filter((_,i) => i%stride===0).slice(-MAX_PTS);
+  const lbls = rtD.map((_,i) => i);
+
+  chartRt.data.labels           = lbls;
+  chartRt.data.datasets[0].data = rtD;
   chartRt.update('none');
- 
+
   chartVe.data.labels              = lbls;
   chartVe.data.datasets[0].data    = varD.slice(-lbls.length);
   chartVe.data.datasets[1].data    = entD.slice(-lbls.length);
   chartVe.update('none');
- 
+
   chartReg.data.labels             = regD.map((_,i) => i);
   chartReg.data.datasets[0].data   = regD;
   chartReg.update('none');
 }
- 
+
 // ── Log ───────────────────────────────────────────────
 function addLog(t, type, msg) {
   const body   = document.getElementById('log-body');
@@ -1072,20 +1154,18 @@ function addLog(t, type, msg) {
   while (body.children.length > 50) body.removeChild(body.lastChild);
 }
 function clearLog() { document.getElementById('log-body').innerHTML = ''; }
- 
-// ── Banner ────────────────────────────────────────────
+
 function showBanner(type, msg) {
   const b = document.getElementById('scenario-banner');
   b.textContent = msg;
   b.className   = 'scenario-banner show ' + type;
   setTimeout(() => b.classList.remove('show'), 3000);
 }
- 
-// ── Boot ──────────────────────────────────────────────
+
 window.addEventListener('resize', () => {
   if (lastState) {
-    const probs  = lastState.probabilities || [0.25,0.25,0.25,0.25];
-    const phero  = lastState.pheromones    || [1,1,1,1];
+    const probs  = lastState.probabilities || Array(numServers).fill(1/numServers);
+    const phero  = lastState.pheromones    || Array(numServers).fill(1);
     const sel    = lastState.selected_server ?? -1;
     const cool   = phero.map(p => p <= 0.015);
     const deg    = (lastState.servers||[]).map(s => !!s.degraded);
@@ -1094,6 +1174,7 @@ window.addEventListener('resize', () => {
     drawNetwork();
   }
 });
+
 initSim();
 </script>
 </body>

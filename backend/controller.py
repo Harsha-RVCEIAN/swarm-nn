@@ -66,6 +66,7 @@ def process_request(state_matrix, aco: ACO):
 
 def process_feedback(state_matrix, selected_server, actual_rt, aco: ACO):
     state_matrix = validate_state(state_matrix)
+    actual_rt = float(np.clip(actual_rt, 50.0, 2500.0))  # ← add this line
     log_actual_rt(actual_rt)
 
     aco.update(selected_server, actual_rt)
@@ -79,13 +80,16 @@ def process_feedback(state_matrix, selected_server, actual_rt, aco: ACO):
 
 def retrain_model():
     log_retraining()
-
-    data = buffer.get_recent_data()
-    if len(data) == 0:
-        return
-
-    X = np.array([d[0] for d in data])
-    y = np.array([d[1] for d in data])
-
-    from nn.train import train_incremental
-    train_incremental(X, y)
+    try:
+        data = buffer.get_recent_data()
+        if len(data) < 10:
+            return
+        X = np.array([d[0] for d in data])
+        y = np.array([d[1] for d in data])
+        X = np.nan_to_num(X, nan=0.0, posinf=1.0, neginf=0.0)
+        y = np.clip(np.nan_to_num(y, nan=500.0), 50.0, 5000.0)
+        from nn.train import train_incremental
+        train_incremental(X, y)
+    except Exception as e:
+        import logging
+        logging.getLogger("NN-ACO").error("Retrain skipped: %s", e, exc_info=True)
