@@ -1,0 +1,151 @@
+{
+  "title": "NN-ACO Load Balancer",
+  "uid": "nnaco-main",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "2s",
+  "time": { "from": "now-5m", "to": "now" },
+  "panels": [
+
+    {
+      "id": 1, "type": "stat", "gridPos": {"x":0,"y":0,"w":4,"h":3},
+      "title": "Avg Response Time",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms", "color": {"mode":"thresholds"},
+          "thresholds": {"steps": [
+            {"color":"green","value":0},
+            {"color":"yellow","value":800},
+            {"color":"red","value":1500}
+          ]}
+        }
+      },
+      "targets": [{"expr":"nnaco_avg_response_time_ms","legendFormat":"RT"}]
+    },
+
+    {
+      "id": 2, "type": "stat", "gridPos": {"x":4,"y":0,"w":4,"h":3},
+      "title": "Load Variance",
+      "fieldConfig": {"defaults": {"unit":"short","color":{"mode":"thresholds"},
+        "thresholds":{"steps":[{"color":"green","value":0},{"color":"yellow","value":2},{"color":"red","value":5}]}
+      }},
+      "targets": [{"expr":"nnaco_load_variance","legendFormat":"Variance"}]
+    },
+
+    {
+      "id": 3, "type": "stat", "gridPos": {"x":8,"y":0,"w":4,"h":3},
+      "title": "Routing Entropy (bits)",
+      "fieldConfig": {"defaults": {"unit":"short","decimals":2}},
+      "targets": [{"expr":"nnaco_routing_entropy_bits","legendFormat":"Entropy"}]
+    },
+
+    {
+      "id": 4, "type": "stat", "gridPos": {"x":12,"y":0,"w":4,"h":3},
+      "title": "Avg Regret",
+      "fieldConfig": {"defaults": {"unit":"ms","color":{"mode":"thresholds"},
+        "thresholds":{"steps":[{"color":"green","value":0},{"color":"yellow","value":200},{"color":"red","value":500}]}
+      }},
+      "targets": [{"expr":"nnaco_avg_regret_ms","legendFormat":"Regret"}]
+    },
+
+    {
+      "id": 5, "type": "stat", "gridPos": {"x":16,"y":0,"w":4,"h":3},
+      "title": "Arrival Rate λ",
+      "fieldConfig": {"defaults": {"unit":"reqps"}},
+      "targets": [{"expr":"nnaco_arrival_rate","legendFormat":"λ"}]
+    },
+
+    {
+      "id": 6, "type": "stat", "gridPos": {"x":20,"y":0,"w":4,"h":3},
+      "title": "Simulation Step",
+      "fieldConfig": {"defaults": {"unit":"short"}},
+      "targets": [{"expr":"nnaco_simulation_step","legendFormat":"Step"}]
+    },
+
+    {
+      "id": 10, "type": "timeseries", "gridPos": {"x":0,"y":3,"w":12,"h":8},
+      "title": "Response Time over Time (ms)",
+      "fieldConfig": {"defaults": {"unit":"ms","custom":{"lineWidth":2}}},
+      "targets": [{"expr":"nnaco_avg_response_time_ms","legendFormat":"Avg RT"}]
+    },
+
+    {
+      "id": 11, "type": "timeseries", "gridPos": {"x":12,"y":3,"w":12,"h":8},
+      "title": "Load Variance & Entropy",
+      "fieldConfig": {"defaults": {"custom":{"lineWidth":1.5}}},
+      "targets": [
+        {"expr":"nnaco_load_variance","legendFormat":"Variance"},
+        {"expr":"nnaco_routing_entropy_bits","legendFormat":"Entropy"}
+      ]
+    },
+
+    {
+      "id": 20, "type": "timeseries", "gridPos": {"x":0,"y":11,"w":12,"h":8},
+      "title": "Queue Length per Server",
+      "fieldConfig": {"defaults": {"unit":"short","custom":{"lineWidth":1.5}}},
+      "targets": [
+        {"expr":"nnaco_server_queue_length","legendFormat":"{{server_name}}"}
+      ]
+    },
+
+    {
+      "id": 21, "type": "timeseries", "gridPos": {"x":12,"y":11,"w":12,"h":8},
+      "title": "Pheromone Level per Server",
+      "fieldConfig": {"defaults": {"unit":"short","custom":{"lineWidth":1.5}}},
+      "targets": [
+        {"expr":"nnaco_pheromone_level","legendFormat":"{{server_name}}"}
+      ]
+    },
+
+    {
+      "id": 30, "type": "timeseries", "gridPos": {"x":0,"y":19,"w":12,"h":8},
+      "title": "Routing Probability per Server",
+      "fieldConfig": {"defaults": {"unit":"percentunit","custom":{"lineWidth":1.5}}},
+      "targets": [
+        {"expr":"nnaco_route_probability","legendFormat":"{{server_name}}"}
+      ]
+    },
+
+    {
+      "id": 31, "type": "bargauge", "gridPos": {"x":12,"y":19,"w":12,"h":8},
+      "title": "Total Requests Handled per Server",
+      "fieldConfig": {"defaults": {"unit":"short","color":{"mode":"palette-classic"}}},
+      "options": {"orientation":"horizontal","reduceOptions":{"calcs":["lastNotNull"]}},
+      "targets": [
+        {"expr":"nnaco_server_total_requests","legendFormat":"{{server_name}}"}
+      ]
+    },
+
+    {
+      "id": 40, "type": "timeseries", "gridPos": {"x":0,"y":27,"w":12,"h":8},
+      "title": "Cooldown Events (cumulative)",
+      "fieldConfig": {"defaults": {"unit":"short"}},
+      "targets": [
+        {"expr":"nnaco_cooldown_events_total","legendFormat":"Server {{server_id}}"}
+      ]
+    },
+
+    {
+      "id": 41, "type": "heatmap", "gridPos": {"x":12,"y":27,"w":12,"h":8},
+      "title": "Response Time Distribution (Heatmap)",
+      "targets": [
+        {"expr":"rate(nnaco_response_time_histogram_ms_bucket[30s])","legendFormat":"{{le}}"}
+      ]
+    },
+
+    {
+      "id": 50, "type": "table", "gridPos": {"x":0,"y":35,"w":24,"h":7},
+      "title": "Server Status Table",
+      "fieldConfig": {"defaults": {"unit":"short"}},
+      "options": {"sortBy":[{"displayName":"server_name"}]},
+      "targets": [
+        {"expr":"nnaco_server_status","legendFormat":"{{server_name}}","instant":true},
+        {"expr":"nnaco_server_queue_length","legendFormat":"{{server_name}}","instant":true},
+        {"expr":"nnaco_pheromone_level","legendFormat":"{{server_name}}","instant":true},
+        {"expr":"nnaco_server_total_requests","legendFormat":"{{server_name}}","instant":true},
+        {"expr":"nnaco_server_last_rt_ms","legendFormat":"{{server_name}}","instant":true}
+      ]
+    }
+
+  ]
+}

@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 2s        # pull metrics every 2 seconds (matches sim tick)
+  evaluation_interval: 2s
+
+scrape_configs:
+  - job_name: "nnaco_backend"
+    static_configs:
+      - targets: ["host.docker.internal:8000"]   # FastAPI backend
+    metrics_path: /metrics

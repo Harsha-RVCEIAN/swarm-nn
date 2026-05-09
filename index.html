@@ -1,969 +1,1526 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Neural Swarm Load Balancer</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<style>
-:root {
-  --bg: #080c10;
-  --bg2: #0d1117;
-  --bg3: #161b22;
-  --bg4: #1c2330;
-  --border: rgba(255,255,255,0.07);
-  --border2: rgba(255,255,255,0.12);
-  --text: #e6edf3;
-  --text2: #8b949e;
-  --text3: #484f58;
-  --blue: #58a6ff;
-  --blue2: #1f6feb;
-  --green: #3fb950;
-  --green2: #0d4429;
-  --red: #f85149;
-  --red2: #4a1b1b;
-  --amber: #d29922;
-  --amber2: #3d2c00;
-  --purple: #bc8cff;
-  --teal: #39d353;
-  --accent: #58a6ff;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(88,166,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(88,166,255,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
-}
-.app { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 20px; }
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  margin-bottom: 16px;
-}
-.header-left { display: flex; align-items: center; gap: 14px; }
-.logo {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--blue2), var(--purple));
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-}
-.title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); }
-.subtitle { font-size: 11px; color: var(--text2); margin-top: 1px; }
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(63,185,80,0.4)} 50%{opacity:.8;box-shadow:0 0 0 6px rgba(63,185,80,0)} }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neural Swarm Load Balancer</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    :root {
+      --bg: #080c10;
+      --bg2: #0d1117;
+      --bg3: #161b22;
+      --bg4: #1c2330;
+      --border: rgba(255, 255, 255, 0.07);
+      --border2: rgba(255, 255, 255, 0.12);
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --text3: #484f58;
+      --blue: #58a6ff;
+      --blue2: #1f6feb;
+      --green: #3fb950;
+      --green2: #0d4429;
+      --red: #f85149;
+      --red2: #4a1b1b;
+      --amber: #d29922;
+      --amber2: #3d2c00;
+      --purple: #bc8cff;
+      --teal: #39d353;
+      --accent: #58a6ff;
+    }
 
-.controls {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  padding: 12px 16px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-.ctrl-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-right: 4px; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-/* ── Scenario buttons with tooltip ── */
-.scenario-group { display: flex; gap: 4px; }
-.sc-btn-wrap { position: relative; display: inline-block; }
-.sc-btn {
-  padding: 5px 14px;
-  border: 1px solid var(--border2);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text2);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all .15s;
-}
-.sc-btn:hover { background: var(--bg3); color: var(--text); }
-.sc-btn.active { background: var(--blue2); border-color: var(--blue); color: #fff; }
-.sc-btn.active.burst { background: #7a3e00; border-color: var(--amber); color: var(--amber); }
-.sc-btn.active.adversarial { background: #3d0a0a; border-color: var(--red); color: var(--red); }
-/* tooltip */
-.sc-tooltip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  border-radius: 6px;
-  padding: 7px 10px;
-  font-size: 10px;
-  color: var(--text2);
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .15s;
-  z-index: 400;
-  text-align: left;
-  min-width: 200px;
-  line-height: 1.5;
-}
-.sc-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-top-color: var(--border2);
-}
-.sc-btn-wrap:hover .sc-tooltip { opacity: 1; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-.divider { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(88, 166, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(88, 166, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-/* ── Dynamic server count ── */
-.server-count-ctrl { display: flex; align-items: center; gap: 6px; }
-.srv-cnt-btn {
-  width: 22px; height: 22px;
-  border: 1px solid var(--border2);
-  border-radius: 5px;
-  background: transparent;
-  color: var(--text2);
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all .15s;
-}
-.srv-cnt-btn:hover:not(:disabled) { background: var(--bg3); color: var(--text); border-color: var(--blue); }
-.srv-cnt-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.srv-cnt-display {
-  font-family: 'Syne', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--blue);
-  min-width: 18px;
-  text-align: center;
-}
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
-.run-btn {
-  padding: 6px 20px;
-  border: 1px solid var(--blue);
-  border-radius: 6px;
-  background: rgba(31,111,235,0.15);
-  color: var(--blue);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all .15s;
-  margin-left: auto;
-}
-.run-btn:hover { background: rgba(31,111,235,0.3); }
-.run-btn.running { border-color: var(--red); background: rgba(248,81,73,0.1); color: var(--red); }
-.run-btn.paused { border-color: var(--amber); background: rgba(210,153,34,0.1); color: var(--amber); }
-.reset-btn {
-  padding: 6px 14px;
-  border: 1px solid var(--border2);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text2);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all .15s;
-}
-.reset-btn:hover { background: var(--bg3); color: var(--text); }
-.speed-wrap { display: flex; align-items: center; gap: 8px; }
-.speed-wrap input[type=range] {
-  width: 80px; accent-color: var(--blue);
-  -webkit-appearance: none; height: 3px; border-radius: 2px;
-  background: var(--bg3); outline: none; cursor: pointer;
-}
-.speed-wrap input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 12px; height: 12px;
-  border-radius: 50%; background: var(--blue); cursor: pointer;
-}
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
 
-.progress-wrap { margin-bottom: 16px; }
-.progress-track { height: 2px; background: var(--bg3); border-radius: 1px; overflow: hidden; }
-.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--blue2), var(--purple)); transition: width .1s; border-radius: 1px; }
-.progress-info { display: flex; justify-content: space-between; margin-top: 5px; }
-.progress-info span { font-size: 10px; color: var(--text3); }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
 
-.main-grid { display: grid; grid-template-columns: 1fr 320px; gap: 14px; margin-bottom: 14px; }
-.network-panel {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-}
-.panel-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px; border-bottom: 1px solid var(--border);
-}
-.panel-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
-.panel-badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: var(--bg3); color: var(--text2); }
-#network-canvas { width: 100%; height: 320px; display: block; }
+    .logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--blue2), var(--purple));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
 
-.metrics-panel { display: flex; flex-direction: column; gap: 10px; }
-.metric-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  position: relative;
-  overflow: hidden;
-}
-.metric-card::after {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 2px 0 0 2px;
-}
-.metric-card.blue::after { background: var(--blue); }
-.metric-card.green::after { background: var(--green); }
-.metric-card.amber::after { background: var(--amber); }
-.metric-card.purple::after { background: var(--purple); }
-.metric-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-.metric-value { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
-.metric-unit { font-size: 11px; color: var(--text2); margin-left: 4px; font-family: 'JetBrains Mono', monospace; font-weight: 400; }
-.metric-sub { font-size: 10px; color: var(--text3); margin-top: 4px; }
+    .title {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
 
-.server-section { margin-bottom: 14px; }
-.server-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+    .subtitle {
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 1px;
+    }
 
-.server-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px;
-  transition: border-color .3s, background .3s;
-  position: relative;
-  overflow: hidden;
-}
-.server-card.selected { border-color: var(--blue); background: rgba(31,111,235,0.05); }
-.server-card.cooldown { border-color: var(--red); background: rgba(248,81,73,0.05); }
-.server-card.degraded { border-color: var(--amber); background: rgba(210,153,34,0.05); }
-.server-card.selected::before {
-  content: '';
-  position: absolute; inset: 0; border-radius: 10px;
-  border: 1px solid var(--blue);
-  animation: cardpulse .6s ease-out;
-  pointer-events: none;
-}
-@keyframes cardpulse { from{opacity:1;transform:scale(1)} to{opacity:0;transform:scale(1.03)} }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
 
-.srv-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-.srv-name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); }
-.srv-id { font-size: 10px; color: var(--text3); }
-.srv-status { font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
-.srv-status.online { background: var(--green2); color: var(--green); }
-.srv-status.cooldown { background: var(--red2); color: var(--red); }
-.srv-status.degraded { background: var(--amber2); color: var(--amber); }
+    @keyframes pulse {
 
-.bar-section { margin-bottom: 8px; }
-.bar-row { margin-bottom: 5px; }
-.bar-top { display: flex; justify-content: space-between; margin-bottom: 3px; }
-.bar-lbl { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
-.bar-val { font-size: 9px; color: var(--text2); font-weight: 500; }
-.bar-track { height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
-.bar-fill { height: 100%; border-radius: 2px; transition: width .4s ease; }
-.pheromone-fill { background: var(--blue); }
-.queue-fill { background: var(--red); }
-.prob-fill { background: var(--green); }
+      0%,
+      100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.4)
+      }
 
-.srv-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 8px; }
-.stat { font-size: 10px; color: var(--text3); }
-.stat span { color: var(--text2); font-weight: 500; }
+      50% {
+        opacity: .8;
+        box-shadow: 0 0 0 6px rgba(63, 185, 80, 0)
+      }
+    }
 
-/* total requests highlight row */
-.srv-total-row {
-  margin-top: 8px;
-  padding: 5px 8px;
-  background: rgba(88,166,255,0.06);
-  border-radius: 5px;
-  border: 1px solid rgba(88,166,255,0.12);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.srv-total-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
-.srv-total-val { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--blue); }
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
 
-.charts-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-.chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
-.chart-title { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-.chart-wrap { position: relative; height: 130px; }
+    .ctrl-label {
+      font-size: 10px;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-right: 4px;
+    }
 
-.bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .scenario-group {
+      display: flex;
+      gap: 4px;
+    }
 
-.pheromone-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
-.phero-grid { display: grid; gap: 8px; margin-top: 10px; }
-.phero-cell { text-align: center; }
-.phero-circle {
-  width: 52px; height: 52px; border-radius: 50%;
-  margin: 0 auto 6px;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
-  transition: background .5s, color .5s;
-  border: 2px solid transparent;
-}
-.phero-label { font-size: 10px; color: var(--text3); }
-.phero-sublabel { font-size: 9px; color: var(--text3); margin-top: 2px; }
+    .sc-btn-wrap {
+      position: relative;
+      display: inline-block;
+    }
 
-.log-panel {
-  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px;
-  display: flex; flex-direction: column;
-}
-.log-body {
-  flex: 1; overflow-y: auto; max-height: 160px;
-  scrollbar-width: thin; scrollbar-color: var(--bg4) transparent;
-}
-.log-entry { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 11px; line-height: 1.4; }
-.log-entry:last-child { border-bottom: none; }
-.log-t { color: var(--text3); min-width: 38px; flex-shrink: 0; }
-.log-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
-.log-msg { color: var(--text2); }
-.log-msg.info { color: var(--blue); }
-.log-msg.warn { color: var(--amber); }
-.log-msg.err  { color: var(--red); }
-.log-msg.ok   { color: var(--green); }
+    .sc-btn {
+      padding: 5px 14px;
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text2);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all .15s;
+    }
 
-.scenario-banner {
-  position: fixed; top: 20px; right: 20px;
-  padding: 8px 16px; border-radius: 8px;
-  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
-  opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 100;
-}
-.scenario-banner.show { opacity: 1; }
-.scenario-banner.burst { background: var(--amber2); color: var(--amber); border: 1px solid var(--amber); }
-.scenario-banner.adversarial { background: var(--red2); color: var(--red); border: 1px solid var(--red); }
-.scenario-banner.recovery { background: var(--green2); color: var(--green); border: 1px solid var(--green); }
+    .sc-btn:hover {
+      background: var(--bg3);
+      color: var(--text);
+    }
 
-.api-error {
-  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-  background: var(--red2); border: 1px solid var(--red);
-  color: var(--red); padding: 8px 18px; border-radius: 8px;
-  font-size: 12px; z-index: 300; display: none;
-}
-.api-error.show { display: block; }
+    .sc-btn.active {
+      background: var(--blue2);
+      border-color: var(--blue);
+      color: #fff;
+    }
 
-@media(max-width:900px) {
-  .main-grid { grid-template-columns: 1fr; }
-  .charts-row { grid-template-columns: 1fr; }
-  .bottom-row { grid-template-columns: 1fr; }
-}
-</style>
+    .sc-btn.active.burst {
+      background: #7a3e00;
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .sc-btn.active.adversarial {
+      background: #3d0a0a;
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .sc-tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 10px;
+      color: var(--text2);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .15s;
+      z-index: 400;
+      text-align: left;
+      min-width: 200px;
+      line-height: 1.5;
+    }
+
+    .sc-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: var(--border2);
+    }
+
+    .sc-btn-wrap:hover .sc-tooltip {
+      opacity: 1;
+    }
+
+    .divider {
+      width: 1px;
+      height: 28px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    .server-count-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .srv-cnt-btn {
+      width: 22px;
+      height: 22px;
+      border: 1px solid var(--border2);
+      border-radius: 5px;
+      background: transparent;
+      color: var(--text2);
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+    }
+
+    .srv-cnt-btn:hover:not(:disabled) {
+      background: var(--bg3);
+      color: var(--text);
+      border-color: var(--blue);
+    }
+
+    .srv-cnt-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .srv-cnt-display {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--blue);
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .run-btn {
+      padding: 6px 20px;
+      border: 1px solid var(--blue);
+      border-radius: 6px;
+      background: rgba(31, 111, 235, 0.15);
+      color: var(--blue);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+      margin-left: auto;
+    }
+
+    .run-btn:hover {
+      background: rgba(31, 111, 235, 0.3);
+    }
+
+    .run-btn.running {
+      border-color: var(--red);
+      background: rgba(248, 81, 73, 0.1);
+      color: var(--red);
+    }
+
+    .run-btn.paused {
+      border-color: var(--amber);
+      background: rgba(210, 153, 34, 0.1);
+      color: var(--amber);
+    }
+
+    .reset-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text2);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .reset-btn:hover {
+      background: var(--bg3);
+      color: var(--text);
+    }
+
+    .speed-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .speed-wrap input[type=range] {
+      width: 80px;
+      accent-color: var(--blue);
+      -webkit-appearance: none;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--bg3);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .speed-wrap input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--blue);
+      cursor: pointer;
+    }
+
+    .progress-wrap {
+      margin-bottom: 16px;
+    }
+
+    .progress-track {
+      height: 2px;
+      background: var(--bg3);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--blue2), var(--purple));
+      transition: width .1s;
+      border-radius: 1px;
+    }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+    }
+
+    .progress-info span {
+      font-size: 10px;
+      color: var(--text3);
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .network-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .panel-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--bg3);
+      color: var(--text2);
+    }
+
+    #network-canvas {
+      width: 100%;
+      height: 320px;
+      display: block;
+    }
+
+    .metrics-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .metric-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      border-radius: 2px 0 0 2px;
+    }
+
+    .metric-card.blue::after {
+      background: var(--blue);
+    }
+
+    .metric-card.green::after {
+      background: var(--green);
+    }
+
+    .metric-card.amber::after {
+      background: var(--amber);
+    }
+
+    .metric-card.purple::after {
+      background: var(--purple);
+    }
+
+    .metric-label {
+      font-size: 10px;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .metric-unit {
+      font-size: 11px;
+      color: var(--text2);
+      margin-left: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 400;
+    }
+
+    .metric-sub {
+      font-size: 10px;
+      color: var(--text3);
+      margin-top: 4px;
+    }
+
+    .server-section {
+      margin-bottom: 14px;
+    }
+
+    .server-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .server-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      transition: border-color .3s, background .3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .server-card.selected {
+      border-color: var(--blue);
+      background: rgba(31, 111, 235, 0.05);
+    }
+
+    .server-card.cooldown {
+      border-color: var(--red);
+      background: rgba(248, 81, 73, 0.05);
+    }
+
+    .server-card.degraded {
+      border-color: var(--amber);
+      background: rgba(210, 153, 34, 0.05);
+    }
+
+    .server-card.selected::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      border: 1px solid var(--blue);
+      animation: cardpulse .6s ease-out;
+      pointer-events: none;
+    }
+
+    @keyframes cardpulse {
+      from {
+        opacity: 1;
+        transform: scale(1)
+      }
+
+      to {
+        opacity: 0;
+        transform: scale(1.03)
+      }
+    }
+
+    .srv-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .srv-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .srv-id {
+      font-size: 10px;
+      color: var(--text3);
+    }
+
+    .srv-status {
+      font-size: 9px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .srv-status.online {
+      background: var(--green2);
+      color: var(--green);
+    }
+
+    .srv-status.cooldown {
+      background: var(--red2);
+      color: var(--red);
+    }
+
+    .srv-status.degraded {
+      background: var(--amber2);
+      color: var(--amber);
+    }
+
+    .bar-section {
+      margin-bottom: 8px;
+    }
+
+    .bar-row {
+      margin-bottom: 5px;
+    }
+
+    .bar-top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+
+    .bar-lbl {
+      font-size: 9px;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .bar-val {
+      font-size: 9px;
+      color: var(--text2);
+      font-weight: 500;
+    }
+
+    .bar-track {
+      height: 3px;
+      background: var(--bg3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width .4s ease;
+    }
+
+    .pheromone-fill {
+      background: var(--blue);
+    }
+
+    .queue-fill {
+      background: var(--red);
+    }
+
+    .prob-fill {
+      background: var(--green);
+    }
+
+    .srv-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .stat {
+      font-size: 10px;
+      color: var(--text3);
+    }
+
+    .stat span {
+      color: var(--text2);
+      font-weight: 500;
+    }
+
+    .srv-total-row {
+      margin-top: 8px;
+      padding: 5px 8px;
+      background: rgba(88, 166, 255, 0.06);
+      border-radius: 5px;
+      border: 1px solid rgba(88, 166, 255, 0.12);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .srv-total-label {
+      font-size: 9px;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .srv-total-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--blue);
+    }
+
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .chart-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .chart-title {
+      font-size: 10px;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 130px;
+    }
+
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .pheromone-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .phero-grid {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .phero-cell {
+      text-align: center;
+    }
+
+    .phero-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      margin: 0 auto 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      transition: background .5s, color .5s;
+      border: 2px solid transparent;
+    }
+
+    .phero-label {
+      font-size: 10px;
+      color: var(--text3);
+    }
+
+    .phero-sublabel {
+      font-size: 9px;
+      color: var(--text3);
+      margin-top: 2px;
+    }
+
+    .log-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .log-body {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 160px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--bg4) transparent;
+    }
+
+    .log-entry {
+      display: flex;
+      gap: 10px;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-t {
+      color: var(--text3);
+      min-width: 38px;
+      flex-shrink: 0;
+    }
+
+    .log-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+
+    .log-msg {
+      color: var(--text2);
+    }
+
+    .log-msg.info {
+      color: var(--blue);
+    }
+
+    .log-msg.warn {
+      color: var(--amber);
+    }
+
+    .log-msg.err {
+      color: var(--red);
+    }
+
+    .log-msg.ok {
+      color: var(--green);
+    }
+
+    .scenario-banner {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .scenario-banner.show {
+      opacity: 1;
+    }
+
+    .scenario-banner.burst {
+      background: var(--amber2);
+      color: var(--amber);
+      border: 1px solid var(--amber);
+    }
+
+    .scenario-banner.adversarial {
+      background: var(--red2);
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+
+    .scenario-banner.recovery {
+      background: var(--green2);
+      color: var(--green);
+      border: 1px solid var(--green);
+    }
+
+    .api-error {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--red2);
+      border: 1px solid var(--red);
+      color: var(--red);
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 12px;
+      z-index: 300;
+      display: none;
+    }
+
+    .api-error.show {
+      display: block;
+    }
+
+    @media(max-width:900px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .charts-row {
+        grid-template-columns: 1fr;
+      }
+
+      .bottom-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="scenario-banner" id="scenario-banner"></div>
-<div class="api-error" id="api-error">⚠ API unreachable — check backend</div>
+  <div class="scenario-banner" id="scenario-banner"></div>
+  <div class="api-error" id="api-error">⚠ API unreachable — check backend</div>
 
-<div class="app">
+  <div class="app">
 
-<!-- Header -->
-<div class="header">
-  <div class="header-left">
-    <div class="logo">🐜</div>
-    <div>
-      <div class="title">Neural Swarm Load Balancer</div>
-      <div class="subtitle">ACO + Neural Network · Real-time Simulation</div>
-    </div>
-  </div>
-  <div style="display:flex;align-items:center;gap:8px">
-    <div class="status-dot" id="status-dot"></div>
-    <span style="font-size:11px;color:var(--text2)" id="status-text">Ready</span>
-  </div>
-</div>
-
-<!-- Controls -->
-<div class="controls">
-  <!-- Scenario buttons with tooltips -->
-  <span class="ctrl-label">Scenario</span>
-  <div class="scenario-group">
-    <div class="sc-btn-wrap">
-      <button class="sc-btn active" id="btn-normal" onclick="setScenario('normal',this)">Normal</button>
-      <div class="sc-tooltip">
-        <strong style="color:var(--text)">Normal</strong><br>
-        Steady arrival rate (λ=1.0).<br>
-        Tests baseline ACO+NN routing<br>
-        with stable server conditions.
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="logo">🐜</div>
+        <div>
+          <div class="title">Neural Swarm Load Balancer</div>
+          <div class="subtitle">ACO + Neural Network · Real-time Simulation</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="status-dot" id="status-dot"></div>
+        <span style="font-size:11px;color:var(--text2)" id="status-text">Ready</span>
       </div>
     </div>
-    <div class="sc-btn-wrap">
-      <button class="sc-btn burst" id="btn-burst" onclick="setScenario('burst',this)">Burst</button>
-      <div class="sc-tooltip">
-        <strong style="color:var(--amber)">Burst Traffic</strong><br>
-        Steps 100–150: arrival rate jumps<br>
-        to λ=3.0 (3× normal load).<br>
-        Tests adaptation under stress.
+
+    <!-- Controls -->
+    <div class="controls">
+      <span class="ctrl-label">Scenario</span>
+      <div class="scenario-group">
+        <div class="sc-btn-wrap">
+          <button class="sc-btn active" id="btn-normal" onclick="setScenario('normal',this)">Normal</button>
+          <div class="sc-tooltip">
+            <strong style="color:var(--text)">Normal</strong><br>
+            Steady arrival rate (λ=1.0).<br>
+            Tests baseline ACO+NN routing<br>
+            with stable server conditions.
+          </div>
+        </div>
+        <div class="sc-btn-wrap">
+          <button class="sc-btn burst" id="btn-burst" onclick="setScenario('burst',this)">Burst</button>
+          <div class="sc-tooltip">
+            <strong style="color:var(--amber)">Burst Traffic</strong><br>
+            Steps 100–150: arrival rate jumps<br>
+            to λ=3.0 (3× normal load).<br>
+            Tests adaptation under stress.
+          </div>
+        </div>
+        <div class="sc-btn-wrap">
+          <button class="sc-btn adversarial" id="btn-adversarial"
+            onclick="setScenario('adversarial',this)">Adversarial</button>
+          <div class="sc-tooltip">
+            <strong style="color:var(--red)">Adversarial</strong><br>
+            At step 100 the fastest server<br>
+            is degraded (10% service rate).<br>
+            Tests ACO penalty &amp; rerouting.
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <span class="ctrl-label">Servers</span>
+      <div class="server-count-ctrl">
+        <button class="srv-cnt-btn" id="btn-srv-minus" onclick="changeServerCount(-1)" title="Remove server">−</button>
+        <span class="srv-cnt-display" id="srv-cnt-display">4</span>
+        <button class="srv-cnt-btn" id="btn-srv-plus" onclick="changeServerCount(+1)" title="Add server">+</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <span class="ctrl-label">Speed</span>
+      <div class="speed-wrap">
+        <span style="font-size:10px;color:var(--text3)">1×</span>
+        <input type="range" min="1" max="6" value="3" id="speed-slider" oninput="setSpeed(+this.value)">
+        <span style="font-size:10px;color:var(--text3)">6×</span>
+        <span style="font-size:11px;color:var(--blue);min-width:24px" id="speed-label">3×</span>
+      </div>
+
+      <div class="divider"></div>
+      <button class="reset-btn" onclick="resetSim()">↺ Reset</button>
+      <button class="run-btn" id="run-btn" onclick="toggleRun()">▶ Run Simulation</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-info">
+        <span id="step-label">Step 0 / 200</span>
+        <span id="phase-label">—</span>
+        <span id="time-label">0.0s elapsed</span>
       </div>
     </div>
-    <div class="sc-btn-wrap">
-      <button class="sc-btn adversarial" id="btn-adversarial" onclick="setScenario('adversarial',this)">Adversarial</button>
-      <div class="sc-tooltip">
-        <strong style="color:var(--red)">Adversarial</strong><br>
-        At step 100 the fastest server<br>
-        is degraded (10% service rate).<br>
-        Tests ACO penalty &amp; rerouting.
+
+    <!-- Network + Metrics -->
+    <div class="main-grid">
+      <div class="network-panel">
+        <div class="panel-header">
+          <span class="panel-title">Network Topology</span>
+          <span class="panel-badge" id="arrival-badge">λ = 1.0 req/step</span>
+        </div>
+        <canvas id="network-canvas"></canvas>
+      </div>
+      <div class="metrics-panel">
+        <div class="metric-card blue">
+          <div class="metric-label">Avg Response Time</div>
+          <div><span class="metric-value" id="m-rt">—</span><span class="metric-unit">ms</span></div>
+          <div class="metric-sub" id="m-rt-sub">waiting for data</div>
+        </div>
+        <div class="metric-card red">
+          <div class="metric-label">Load Variance</div>
+          <div><span class="metric-value" id="m-var">—</span></div>
+          <div class="metric-sub" id="m-var-sub">queue length variance</div>
+        </div>
+        <div class="metric-card purple">
+          <div class="metric-label">Entropy</div>
+          <div><span class="metric-value" id="m-ent">—</span><span class="metric-unit">bits</span></div>
+          <div class="metric-sub" id="m-ent-sub">routing randomness</div>
+        </div>
+        <div class="metric-card amber">
+          <div class="metric-label">Avg Regret</div>
+          <div><span class="metric-value" id="m-reg">—</span><span class="metric-unit">ms</span></div>
+          <div class="metric-sub" id="m-reg-sub">vs optimal routing</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="divider"></div>
-
-  <!-- Dynamic server count -->
-  <span class="ctrl-label">Servers</span>
-  <div class="server-count-ctrl">
-    <button class="srv-cnt-btn" id="btn-srv-minus" onclick="changeServerCount(-1)" title="Remove server">−</button>
-    <span class="srv-cnt-display" id="srv-cnt-display">4</span>
-    <button class="srv-cnt-btn" id="btn-srv-plus"  onclick="changeServerCount(+1)" title="Add server">+</button>
-  </div>
-
-  <div class="divider"></div>
-
-  <span class="ctrl-label">Speed</span>
-  <div class="speed-wrap">
-    <span style="font-size:10px;color:var(--text3)">1×</span>
-    <input type="range" min="1" max="6" value="3" id="speed-slider" oninput="setSpeed(+this.value)">
-    <span style="font-size:10px;color:var(--text3)">6×</span>
-    <span style="font-size:11px;color:var(--blue);min-width:24px" id="speed-label">3×</span>
-  </div>
-
-  <div class="divider"></div>
-  <button class="reset-btn" onclick="resetSim()">↺ Reset</button>
-  <button class="run-btn" id="run-btn" onclick="toggleRun()">▶ Run Simulation</button>
-</div>
-
-<!-- Progress -->
-<div class="progress-wrap">
-  <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-  <div class="progress-info">
-    <span id="step-label">Step 0 / 200</span>
-    <span id="phase-label">—</span>
-    <span id="time-label">0.0s elapsed</span>
-  </div>
-</div>
-
-<!-- Network + Metrics -->
-<div class="main-grid">
-  <div class="network-panel">
-    <div class="panel-header">
-      <span class="panel-title">Network Topology</span>
-      <span class="panel-badge" id="arrival-badge">λ = 1.0 req/step</span>
+    <!-- Servers -->
+    <div class="server-section">
+      <div class="server-grid" id="server-grid"></div>
     </div>
-    <canvas id="network-canvas"></canvas>
-  </div>
-  <div class="metrics-panel">
-    <div class="metric-card blue">
-      <div class="metric-label">Avg Response Time</div>
-      <div><span class="metric-value" id="m-rt">—</span><span class="metric-unit">ms</span></div>
-      <div class="metric-sub" id="m-rt-sub">waiting for data</div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Response Time (ms)</div>
+        <div class="chart-wrap"><canvas id="chart-rt"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Load Variance &amp; Entropy</div>
+        <div class="chart-wrap"><canvas id="chart-ve"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Average Regret (ms)</div>
+        <div class="chart-wrap"><canvas id="chart-reg"></canvas></div>
+      </div>
     </div>
-    <div class="metric-card red">
-      <div class="metric-label">Load Variance</div>
-      <div><span class="metric-value" id="m-var">—</span></div>
-      <div class="metric-sub" id="m-var-sub">queue length variance</div>
+
+    <!-- Bottom -->
+    <div class="bottom-row">
+      <div class="pheromone-panel">
+        <div class="panel-header" style="padding:0 0 10px;border:none">
+          <span class="panel-title">ACO Pheromone Matrix</span>
+          <span class="panel-badge">τ evaporation ρ=0.1</span>
+        </div>
+        <div class="phero-grid" id="phero-grid"></div>
+      </div>
+      <div class="log-panel">
+        <div class="panel-header" style="padding:0 0 10px;border:none">
+          <span class="panel-title">Event Log</span>
+          <button onclick="clearLog()"
+            style="font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer">clear</button>
+        </div>
+        <div class="log-body" id="log-body"></div>
+      </div>
     </div>
-    <div class="metric-card purple">
-      <div class="metric-label">Entropy</div>
-      <div><span class="metric-value" id="m-ent">—</span><span class="metric-unit">bits</span></div>
-      <div class="metric-sub" id="m-ent-sub">routing randomness</div>
-    </div>
-    <div class="metric-card amber">
-      <div class="metric-label">Avg Regret</div>
-      <div><span class="metric-value" id="m-reg">—</span><span class="metric-unit">ms</span></div>
-      <div class="metric-sub" id="m-reg-sub">vs optimal routing</div>
-    </div>
-  </div>
-</div>
 
-<!-- Servers -->
-<div class="server-section">
-  <div class="server-grid" id="server-grid"></div>
-</div>
+  </div><!-- /app -->
 
-<!-- Charts -->
-<div class="charts-row">
-  <div class="chart-card">
-    <div class="chart-title">Response Time (ms)</div>
-    <div class="chart-wrap"><canvas id="chart-rt"></canvas></div>
-  </div>
-  <div class="chart-card">
-    <div class="chart-title">Load Variance &amp; Entropy</div>
-    <div class="chart-wrap"><canvas id="chart-ve"></canvas></div>
-  </div>
-  <div class="chart-card">
-    <div class="chart-title">Average Regret (ms)</div>
-    <div class="chart-wrap"><canvas id="chart-reg"></canvas></div>
-  </div>
-</div>
+  <script>
+    // ═══════════════════════════════════════════════════════
+    // CONFIG
+    // ═══════════════════════════════════════════════════════
+    const NUM_STEPS = 200;
+    const MIN_SERVERS = 2;
+    const MAX_SERVERS = 8;
 
-<!-- Bottom -->
-<div class="bottom-row">
-  <div class="pheromone-panel">
-    <div class="panel-header" style="padding:0 0 10px;border:none">
-      <span class="panel-title">ACO Pheromone Matrix</span>
-      <span class="panel-badge">τ evaporation ρ=0.1</span>
-    </div>
-    <div class="phero-grid" id="phero-grid"></div>
-  </div>
-  <div class="log-panel">
-    <div class="panel-header" style="padding:0 0 10px;border:none">
-      <span class="panel-title">Event Log</span>
-      <button onclick="clearLog()" style="font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer">clear</button>
-    </div>
-    <div class="log-body" id="log-body"></div>
-  </div>
-</div>
+    const SERVER_NAMES_POOL = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta'];
+    const SERVER_COLORS_POOL = ['#58a6ff', '#3fb950', '#bc8cff', '#d29922', '#f85149', '#39d353', '#ff7b72', '#79c0ff'];
 
-</div><!-- /app -->
+    let numServers = 4;
 
-<script>
-// ═══════════════════════════════════════════════════════
-// CONFIG
-// ═══════════════════════════════════════════════════════
-const NUM_STEPS    = 200;
-const API_BASE     = 'http://localhost:8000';
-const MIN_SERVERS  = 2;
-const MAX_SERVERS  = 8;
+    // ── UI state ──────────────────────────────────────────
+    let scenario = 'normal';
+    let currentStep = 0;
+    let running = false;
+    let startTime = 0;
+    let chartRt, chartVe, chartReg;
+    let packets = [];
 
-// Server name pool (up to 8)
-const SERVER_NAMES_POOL  = ['Alpha','Beta','Gamma','Delta','Epsilon','Zeta','Eta','Theta'];
-const SERVER_COLORS_POOL = ['#58a6ff','#3fb950','#bc8cff','#d29922','#f85149','#39d353','#ff7b72','#79c0ff'];
+    let rtHistory = [];
+    let varHistory = [];
+    let entHistory = [];
+    let regretHistory = [];
+    let lastState = null;
 
-// Dynamic server count (default 4, matches backend NUM_SERVERS)
-let numServers = 4;
+    // ── Helpers ───────────────────────────────────────────
+    function serverNames() { return SERVER_NAMES_POOL.slice(0, numServers); }
+    function serverColors() { return SERVER_COLORS_POOL.slice(0, numServers); }
 
-// ── UI state ──────────────────────────────────────────
-let scenario      = 'normal';
-let currentStep   = 0;
-let running       = false;
-let simTimer      = null;
-let tickMs        = 80;
-let startTime     = 0;
-let chartRt, chartVe, chartReg;
-let packets       = [];
+    function updateSrvCntUI() {
+      document.getElementById('srv-cnt-display').textContent = numServers;
+      document.getElementById('btn-srv-minus').disabled = (numServers <= MIN_SERVERS);
+      document.getElementById('btn-srv-plus').disabled = (numServers >= MAX_SERVERS);
+    }
 
-let rtHistory     = [];
-let varHistory    = [];
-let entHistory    = [];
-let regretHistory = [];
-let lastState     = null;
+    function changeServerCount(delta) {
+      const next = numServers + delta;
+      if (next < MIN_SERVERS || next > MAX_SERVERS) return;
+      numServers = next;
+      updateSrvCntUI();
+      resetSim();
+      // addLog after resetSim since initSim() calls clearLog() inside
+      setTimeout(() => addLog(0, 'info', `Server count changed to ${numServers} — reset`), 100);
+    }
 
-// ── Helpers ───────────────────────────────────────────
-function serverNames()  { return SERVER_NAMES_POOL.slice(0, numServers); }
-function serverColors() { return SERVER_COLORS_POOL.slice(0, numServers); }
+    // ── WebSocket ─────────────────────────────────────────
+    let ws = null;
+    let wsReady = false;
+    
+    let wsConnecting = false;
 
-function updateSrvCntUI() {
-  document.getElementById('srv-cnt-display').textContent = numServers;
-  document.getElementById('btn-srv-minus').disabled = (numServers <= MIN_SERVERS);
-  document.getElementById('btn-srv-plus').disabled  = (numServers >= MAX_SERVERS);
-}
+    function openWS() {
+      console.trace('openWS called');
+      return new Promise(resolve => {
+        // Already open — done
+        if (ws && ws.readyState === WebSocket.OPEN) { resolve(); return; }
+        // Already connecting — wait for it
+        if (wsConnecting) { setTimeout(() => openWS().then(resolve), 100); return; }
 
-function changeServerCount(delta) {
-  const next = numServers + delta;
-  if (next < MIN_SERVERS || next > MAX_SERVERS) return;
-  numServers = next;
-  updateSrvCntUI();
-  // Reset sim so backend & frontend are in sync
-  resetSim();
-  addLog(0, 'info', `Server count changed to ${numServers} — reset`);
-}
+        wsConnecting = true;
+        wsReady = false;
+        ws = new WebSocket('ws://127.0.0.1:8000/ws/simulate');
 
-// ── API helpers ───────────────────────────────────────
-async function apiStep() {
-  const res = await fetch(`${API_BASE}/step`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ scenario }),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
+        ws.onopen = () => {
+          wsConnecting = false;
+          wsReady = true;
+          showApiError(false);
+          ws.onmessage = e => {
+            const d = JSON.parse(e.data);
+            if (d.type === 'step')  handleStepData(d);
+            if (d.type === 'reset') handleResetData(d);
+            if (d.type === 'done')  stopSim(true);
+            if (d.type === 'error') { showApiError(true); pauseSim(); addLog(currentStep,'err','WS: '+d.detail); }
+          };
+          ws.onerror = () => showApiError(true);
+          ws.onclose = e => {
+            wsReady = false;
+            wsConnecting = false;
+            console.info('WS closed', e.code);
+            showApiError(true);
+            // No auto-reconnect — user must click Reset or Run to reconnect
+          };
+          resolve();
+        };
 
-async function apiReset() {
-  await fetch(`${API_BASE}/reset`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ scenario, num_servers: numServers }),
-  });
-}
+        ws.onerror = () => {
+          wsConnecting = false;
+          showApiError(true);
+          resolve();
+        };
 
-function showApiError(show) {
-  document.getElementById('api-error').classList.toggle('show', show);
-}
+        setTimeout(() => {
+          if (!wsReady && !wsConnecting) { showApiError(true); resolve(); }
+        }, 4000);
+      });
+    }
 
-// ═══════════════════════════════════════════════════════
-// SIMULATION CONTROL
-// ═══════════════════════════════════════════════════════
-async function initSim() {
-  currentStep   = 0;
-  running       = false;
-  startTime     = 0;
-  rtHistory     = [];
-  varHistory    = [];
-  entHistory    = [];
-  regretHistory = [];
-  packets       = [];
-  lastState     = null;
+    function wsSend(obj) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(obj));
+      } else {
+        // queue the send after reconnect
+        openWS().then(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+        });
+      }
+    }
 
-  try {
-    await apiReset();
-    showApiError(false);
-  } catch(e) {
-    showApiError(true);
-  }
+    function showApiError(show) {
+      document.getElementById('api-error').classList.toggle('show', show);
+    }
 
-  clearLog();
-  addLog(0, 'info', 'System initialized — ' + scenario.toUpperCase() + ' scenario');
-  addLog(0, 'info', numServers + ' servers online · backend ACO+NN active');
+    // ═══════════════════════════════════════════════════════
+    // SIMULATION CONTROL
+    // ═══════════════════════════════════════════════════════
+    async function initSim() {
+      await openWS();
+      resetSim();
+    }
 
-  buildServerCards();
-  buildPheroGrid();
-  updateProgress();
-  updateMetrics(null);
+    async function tick() { }
 
-  const eq = 1 / numServers;
-  drawNetwork(
-    Array(numServers).fill(eq),
-    Array(numServers).fill(1),
-    -1,
-    Array(numServers).fill(false),
-    Array(numServers).fill(false)
-  );
-  initCharts();
+    function toggleRun() { running ? pauseSim() : startSim(); }
 
-  document.getElementById('run-btn').textContent = '▶ Run Simulation';
-  document.getElementById('run-btn').className   = 'run-btn';
-  document.getElementById('status-text').textContent = 'Ready';
-  document.getElementById('arrival-badge').textContent = 'λ = 1.0 req/step';
-  updateSrvCntUI();
-}
+    function startSim() {
+      if (currentStep >= NUM_STEPS) { initSim().then(() => _doStart()); return; }
+      if (currentStep > 0) {
+        if (!startTime) startTime = Date.now();
+        running = true;
+        wsSend({ cmd: 'resume' });
+        document.getElementById('run-btn').textContent = '⏸ Pause';
+        document.getElementById('run-btn').className   = 'run-btn running';
+        document.getElementById('status-text').textContent = 'Running';
+        document.getElementById('status-dot').style.background = 'var(--blue)';
+        return;
+      }
+      _doStart();
+    }
 
-async function tick() {
-  if (currentStep >= NUM_STEPS) { stopSim(true); return; }
+    function _doStart() {
+      if (!startTime) startTime = Date.now();
+      running = true;
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        openWS().then(() =>
+          wsSend({ cmd: 'start', scenario, num_servers: numServers,
+                   speed: +document.getElementById('speed-slider').value, num_steps: NUM_STEPS })
+        );
+      } else {
+        wsSend({ cmd: 'start', scenario, num_servers: numServers,
+                 speed: +document.getElementById('speed-slider').value, num_steps: NUM_STEPS });
+      }
+      document.getElementById('run-btn').textContent = '⏸ Pause';
+      document.getElementById('run-btn').className   = 'run-btn running';
+      document.getElementById('status-text').textContent = 'Running';
+      document.getElementById('status-dot').style.background = 'var(--blue)';
+    }
 
-  let data;
-  try {
-    data = await apiStep();
-    showApiError(false);
-  } catch(e) {
-    showApiError(true);
-    pauseSim();
-    addLog(currentStep, 'err', 'API error — simulation paused');
-    return;
-  }
+    function pauseSim() {
+      running = false;
+      wsSend({ cmd: 'pause' });
+      document.getElementById('run-btn').textContent = '▶ Resume';
+      document.getElementById('run-btn').className = 'run-btn paused';
+      document.getElementById('status-text').textContent = 'Paused';
+      document.getElementById('status-dot').style.background = 'var(--amber)';
+    }
 
-  lastState   = data;
-  currentStep = data.step;
+    function stopSim(done) {
+      running = false;
+      document.getElementById('run-btn').textContent = done ? '✓ Complete' : '▶ Run Simulation';
+      document.getElementById('run-btn').className = 'run-btn';
+      document.getElementById('status-text').textContent = done ? 'Complete' : 'Stopped';
+      document.getElementById('status-dot').style.background = done ? 'var(--green)' : 'var(--text3)';
+      if (done) addLog(currentStep, 'ok', 'Simulation complete · ' + rtHistory.length + ' steps processed');
+    }
 
-  if (data.actual_rt  > 0)    rtHistory.push(data.actual_rt);
-  if (data.variance   != null) varHistory.push(data.variance);
-  if (data.entropy    != null) entHistory.push(data.entropy);
-  if (data.regret     != null) regretHistory.push(data.regret);
+    function resetSim() {
+      stopSim(false);
+      currentStep = 0; startTime = 0;
+      rtHistory = []; varHistory = []; entHistory = []; regretHistory = [];
+      packets = []; lastState = null;
+      clearLog();
+      addLog(0, 'info', 'System initialized — ' + scenario.toUpperCase() + ' scenario');
+      addLog(0, 'info', numServers + ' servers online · backend ACO+NN active');
+      buildServerCards(); buildPheroGrid(); updateProgress(); updateMetrics(null);
+      const eq = 1/numServers;
+      drawNetwork(Array(numServers).fill(eq), Array(numServers).fill(1), -1,
+                  Array(numServers).fill(false), Array(numServers).fill(false));
+      initCharts();
+      document.getElementById('run-btn').textContent = '▶ Run Simulation';
+      document.getElementById('run-btn').className = 'run-btn';
+      document.getElementById('status-text').textContent = 'Ready';
+      document.getElementById('arrival-badge').textContent = 'λ = 1.0 req/step';
+      updateSrvCntUI();
+      wsSend({ cmd: 'reset', scenario, num_servers: numServers });
+    }
 
-  if (scenario === 'burst') {
-    if (currentStep === 101) { addLog(currentStep,'warn','BURST STARTED · arrival rate ×3'); showBanner('burst','⚡ Burst Traffic'); }
-    if (currentStep === 151) { addLog(currentStep,'ok','Burst ended · traffic normalised');   showBanner('recovery','✓ Traffic Normal'); }
-    document.getElementById('arrival-badge').textContent = `λ = ${(data.arrival_rate||1).toFixed(1)} req/step`;
-  }
-  if (scenario === 'adversarial' && currentStep === 101) {
-    addLog(currentStep, 'err', 'Server DEGRADED · adversarial at step 100');
-    showBanner('adversarial', '⚠ Server Degraded');
-  }
+    function setScenario(s, btn) {
+      if (running) pauseSim();
+      scenario = s;
+      document.querySelectorAll('.sc-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      resetSim();
+    }
 
-  (data.servers || []).forEach(s => {
-    if (s.degraded && currentStep === 101)
-      addLog(currentStep, 'err', `Server ${s.id} (${serverNames()[s.id] || 'S'+s.id}) service rate dropped`);
-  });
+    function setSpeed(v) {
+      document.getElementById('speed-label').textContent = v + '×';
+      if (running) wsSend({ cmd: 'speed', value: v });
+    }
 
-  const probs      = data.probabilities  || Array(numServers).fill(1/numServers);
-  const pheromones = data.pheromones     || Array(numServers).fill(1);
-  const selected   = data.selected_server ?? -1;
-  const degraded   = (data.servers||[]).map(s => !!s.degraded);
-  const cooldown   = pheromones.map(p => p <= 0.05);
+    function handleStepData(data) {
+      lastState = data;
+      currentStep = data.step;
+      showApiError(false);
+      if (data.actual_rt > 0) rtHistory.push(data.actual_rt);
+      if (data.variance != null) varHistory.push(data.variance);
+      if (data.entropy != null) entHistory.push(data.entropy);
+      if (data.regret != null) regretHistory.push(data.regret);
 
-  updateProgress(data);
-  updateMetrics(data);
-  updateServerCards(data, probs, pheromones, selected, cooldown);
-  updatePheroGrid(pheromones, probs, cooldown, degraded);
-  updateCharts();
-  drawNetwork(probs, pheromones, selected, cooldown, degraded);
-  spawnPacket(selected);
-  tickPackets();
-}
+      if (scenario === 'burst') {
+        if (currentStep === 101) { addLog(currentStep,'warn','BURST STARTED · arrival rate ×3'); showBanner('burst','⚡ Burst Traffic'); }
+        if (currentStep === 151) { addLog(currentStep,'ok','Burst ended · traffic normalised'); showBanner('recovery','✓ Traffic Normal'); }
+        document.getElementById('arrival-badge').textContent = `λ = ${(data.arrival_rate||1).toFixed(1)} req/step`;
+      }
+      if (scenario === 'adversarial' && currentStep === 101) {
+        addLog(currentStep,'err','Server DEGRADED · adversarial at step 100');
+        showBanner('adversarial','⚠ Server Degraded');
+      }
 
-function toggleRun()  { running ? pauseSim() : startSim(); }
+      const probs     = data.probabilities || Array(numServers).fill(1/numServers);
+      const pheromones= data.pheromones    || Array(numServers).fill(1);
+      const selected  = data.selected_server ?? -1;
+      const degraded  = (data.servers||[]).map(s => !!s.degraded);
+      const cooldown  = pheromones.map(p => p <= 0.05);
 
-function startSim() {
-  if (currentStep >= NUM_STEPS) { initSim().then(() => _doStart()); return; }
-  _doStart();
-}
+      updateProgress(data);
+      updateMetrics(data);
+      updateServerCards(data, probs, pheromones, selected, cooldown);
+      updatePheroGrid(pheromones, probs, cooldown, degraded);
+      updateCharts();
+      drawNetwork(probs, pheromones, selected, cooldown, degraded);
+      spawnPacket(selected);
+      tickPackets();
+    }
 
-function _doStart() {
-  if (!startTime) startTime = Date.now();
-  running  = true;
-  simTimer = setInterval(tick, tickMs);
-  document.getElementById('run-btn').textContent = '⏸ Pause';
-  document.getElementById('run-btn').className   = 'run-btn running';
-  document.getElementById('status-text').textContent = 'Running';
-  document.getElementById('status-dot').style.background = 'var(--blue)';
-}
+    function handleResetData(data) {
+      addLog(0, 'info', `Reset confirmed — ${data.num_servers} servers · ${data.scenario}`);
+    }
 
-function pauseSim() {
-  running = false;
-  clearInterval(simTimer);
-  document.getElementById('run-btn').textContent = '▶ Resume';
-  document.getElementById('run-btn').className   = 'run-btn paused';
-  document.getElementById('status-text').textContent = 'Paused';
-  document.getElementById('status-dot').style.background = 'var(--amber)';
-}
+    // ═══════════════════════════════════════════════════════
+    // NETWORK CANVAS
+    // ═══════════════════════════════════════════════════════
+    function getServerPositions(canvas) {
+      const w = canvas.width, h = canvas.height;
+      const cx = w / 2, cy = h / 2;
+      const r = Math.min(w, h) * 0.32;
+      return Array.from({ length: numServers }, (_, i) => {
+        const angle = (i / numServers) * Math.PI * 2 - Math.PI / 2;
+        return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+      });
+    }
 
-function stopSim(done) {
-  running = false;
-  clearInterval(simTimer);
-  document.getElementById('run-btn').textContent = done ? '✓ Complete' : '▶ Run Simulation';
-  document.getElementById('run-btn').className   = 'run-btn';
-  document.getElementById('status-text').textContent = done ? 'Complete' : 'Stopped';
-  document.getElementById('status-dot').style.background = done ? 'var(--green)' : 'var(--text3)';
-  if (done) addLog(currentStep, 'ok', 'Simulation complete · ' + rtHistory.length + ' steps processed');
-}
+    function drawNetwork(probs, pheromones, selected, cooldown, degraded) {
+      const n = numServers;
+      probs = (probs || []).slice(0, n);
+      pheromones = (pheromones || []).slice(0, n);
+      cooldown = (cooldown || []).slice(0, n);
+      degraded = (degraded || []).slice(0, n);
+      while (probs.length < n) probs.push(1 / n);
+      while (pheromones.length < n) pheromones.push(1);
+      while (cooldown.length < n) cooldown.push(false);
+      while (degraded.length < n) degraded.push(false);
 
-function resetSim() {
-  stopSim(false);
-  initSim();
-}
+      const canvas = document.getElementById('network-canvas');
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width || 600;
+      canvas.height = 320;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-function setScenario(s, btn) {
-  if (running) pauseSim();
-  scenario = s;
-  document.querySelectorAll('.sc-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  resetSim();
-}
+      const w = canvas.width, h = canvas.height;
+      const cx = w / 2, cy = h / 2;
+      const positions = getServerPositions(canvas);
+      const colors = serverColors();
+      const names = serverNames();
 
-function setSpeed(v) {
-  tickMs = [300,150,80,40,20,8][v-1];
-  document.getElementById('speed-label').textContent = v + '×';
-  if (running) { clearInterval(simTimer); simTimer = setInterval(tick, tickMs); }
-}
+      positions.forEach((pos, i) => {
+        const alpha = 0.08 + probs[i] * 0.35;
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(88,166,255,${alpha})`;
+        ctx.lineWidth = 0.5 + probs[i] * 2;
+        ctx.setLineDash([4, 6]);
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
 
-// ═══════════════════════════════════════════════════════
-// NETWORK CANVAS
-// ═══════════════════════════════════════════════════════
-function getServerPositions(canvas) {
-  const w = canvas.width, h = canvas.height;
-  const cx = w/2, cy = h/2;
-  const r  = Math.min(w,h) * 0.32;
-  return Array.from({length: numServers}, (_, i) => {
-    const angle = (i / numServers) * Math.PI * 2 - Math.PI / 2;
-    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
-  });
-}
-
-function drawNetwork(probs, pheromones, selected, cooldown, degraded) {
-  const n   = numServers;
-  probs      = (probs      || []).slice(0, n);
-  pheromones = (pheromones || []).slice(0, n);
-  cooldown   = (cooldown   || []).slice(0, n);
-  degraded   = (degraded   || []).slice(0, n);
-  while (probs.length      < n) probs.push(1/n);
-  while (pheromones.length < n) pheromones.push(1);
-  while (cooldown.length   < n) cooldown.push(false);
-  while (degraded.length   < n) degraded.push(false);
-
-  const canvas = document.getElementById('network-canvas');
-  const rect   = canvas.parentElement.getBoundingClientRect();
-  canvas.width  = rect.width || 600;
-  canvas.height = 320;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const w = canvas.width, h = canvas.height;
-  const cx = w/2, cy = h/2;
-  const positions = getServerPositions(canvas);
-  const colors    = serverColors();
-  const names     = serverNames();
-
-  positions.forEach((pos, i) => {
-    const alpha = 0.08 + probs[i] * 0.35;
-    ctx.beginPath();
-    ctx.strokeStyle = `rgba(88,166,255,${alpha})`;
-    ctx.lineWidth   = 0.5 + probs[i] * 2;
-    ctx.setLineDash([4,6]);
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  });
-
-  const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,28);
-  grad.addColorStop(0,'rgba(31,111,235,0.4)');
-  grad.addColorStop(1,'rgba(31,111,235,0.05)');
-  ctx.beginPath();
-  ctx.arc(cx, cy, 28, 0, Math.PI*2);
-  ctx.fillStyle = grad; ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx, cy, 28, 0, Math.PI*2);
-  ctx.strokeStyle = 'rgba(88,166,255,0.5)'; ctx.lineWidth = 1; ctx.stroke();
-  ctx.fillStyle = '#e6edf3';
-  ctx.font = '600 11px "Syne", sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('CTRL', cx, cy-5);
-  ctx.font = '400 9px "JetBrains Mono", monospace';
-  ctx.fillStyle = 'rgba(139,148,158,0.8)';
-  ctx.fillText('ACO+NN', cx, cy+7);
-
-  positions.forEach((pos, i) => {
-    const isSelected = (i === selected);
-    const isCooldown = cooldown[i];
-    const isDegraded = degraded[i];
-    const serverData = lastState ? (lastState.servers || [])[i] : null;
-    const queueLen   = serverData ? serverData.queue_len : 0;
-
-    if (isSelected) {
-      const glow = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,40);
-      glow.addColorStop(0,'rgba(88,166,255,0.2)');
-      glow.addColorStop(1,'transparent');
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 28);
+      grad.addColorStop(0, 'rgba(31,111,235,0.4)');
+      grad.addColorStop(1, 'rgba(31,111,235,0.05)');
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 40, 0, Math.PI*2);
-      ctx.fillStyle = glow; ctx.fill();
-    }
-
-    const maxQ  = 10;
-    const qFrac = Math.min(queueLen / maxQ, 1);
-    if (qFrac > 0) {
+      ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+      ctx.fillStyle = grad; ctx.fill();
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 26, -Math.PI/2, -Math.PI/2 + qFrac*Math.PI*2);
-      ctx.strokeStyle = isCooldown ? 'rgba(248,81,73,0.6)' : 'rgba(248,81,73,0.4)';
-      ctx.lineWidth = 3; ctx.stroke();
+      ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(88,166,255,0.5)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#e6edf3';
+      ctx.font = '600 11px "Syne", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('CTRL', cx, cy - 5);
+      ctx.font = '400 9px "JetBrains Mono", monospace';
+      ctx.fillStyle = 'rgba(139,148,158,0.8)';
+      ctx.fillText('ACO+NN', cx, cy + 7);
+
+      positions.forEach((pos, i) => {
+        const isSelected = (i === selected);
+        const isCooldown = cooldown[i];
+        const isDegraded = degraded[i];
+        const serverData = lastState ? (lastState.servers || [])[i] : null;
+        const queueLen = serverData ? serverData.queue_len : 0;
+
+        if (isSelected) {
+          const glow = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 40);
+          glow.addColorStop(0, 'rgba(88,166,255,0.2)');
+          glow.addColorStop(1, 'transparent');
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 40, 0, Math.PI * 2);
+          ctx.fillStyle = glow; ctx.fill();
+        }
+
+        const maxQ = 10;
+        const qFrac = Math.min(queueLen / maxQ, 1);
+        if (qFrac > 0) {
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 26, -Math.PI / 2, -Math.PI / 2 + qFrac * Math.PI * 2);
+          ctx.strokeStyle = isCooldown ? 'rgba(248,81,73,0.6)' : 'rgba(248,81,73,0.4)';
+          ctx.lineWidth = 3; ctx.stroke();
+        }
+
+        const color = isCooldown ? '#f85149' : isDegraded ? '#d29922' : colors[i];
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
+        ctx.fillStyle = isCooldown ? 'rgba(248,81,73,0.15)' : isDegraded ? 'rgba(210,153,34,0.15)' : 'rgba(22,27,34,0.9)';
+        ctx.fill();
+        ctx.strokeStyle = color + (isSelected ? '' : '88');
+        ctx.lineWidth = isSelected ? 2 : 1;
+        ctx.stroke();
+
+        ctx.fillStyle = color;
+        ctx.font = '700 10px "Syne", sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(names[i], pos.x, pos.y - 4);
+        ctx.fillStyle = 'rgba(139,148,158,0.8)';
+        ctx.font = '400 9px "JetBrains Mono", monospace';
+        ctx.fillText('q:' + queueLen, pos.x, pos.y + 7);
+
+        const pct = (probs[i] * 100).toFixed(0) + '%';
+        const below = pos.y > cy ? pos.y + 36 : pos.y - 36;
+        ctx.fillStyle = 'rgba(88,166,255,0.7)';
+        ctx.font = '400 9px "JetBrains Mono", monospace';
+        ctx.fillText(pct, pos.x, below);
+
+        if (isCooldown) {
+          ctx.fillStyle = '#f85149';
+          ctx.font = '9px monospace';
+          ctx.fillText('🔴', pos.x + 16, pos.y - 16);
+        }
+      });
+
+      packets.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(88,166,255,${p.alpha})`;
+        ctx.fill();
+      });
     }
 
-    const color = isCooldown ? '#f85149' : isDegraded ? '#d29922' : colors[i];
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 22, 0, Math.PI*2);
-    ctx.fillStyle = isCooldown ? 'rgba(248,81,73,0.15)' : isDegraded ? 'rgba(210,153,34,0.15)' : 'rgba(22,27,34,0.9)';
-    ctx.fill();
-    ctx.strokeStyle = color + (isSelected ? '' : '88');
-    ctx.lineWidth   = isSelected ? 2 : 1;
-    ctx.stroke();
-
-    ctx.fillStyle = color;
-    ctx.font = '700 10px "Syne", sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(names[i], pos.x, pos.y-4);
-    ctx.fillStyle = 'rgba(139,148,158,0.8)';
-    ctx.font = '400 9px "JetBrains Mono", monospace';
-    ctx.fillText('q:' + queueLen, pos.x, pos.y+7);
-
-    const pct   = (probs[i]*100).toFixed(0) + '%';
-    const below = pos.y > cy ? pos.y+36 : pos.y-36;
-    ctx.fillStyle = 'rgba(88,166,255,0.7)';
-    ctx.font = '400 9px "JetBrains Mono", monospace';
-    ctx.fillText(pct, pos.x, below);
-
-    if (isCooldown) {
-      ctx.fillStyle = '#f85149';
-      ctx.font = '9px monospace';
-      ctx.fillText('🔴', pos.x+16, pos.y-16);
+    function spawnPacket(target) {
+      if (target < 0) return;
+      const canvas = document.getElementById('network-canvas');
+      const positions = getServerPositions(canvas);
+      if (!positions[target]) return;
+      const cx = canvas.width / 2, cy = canvas.height / 2;
+      packets.push({ x: cx, y: cy, tx: positions[target].x, ty: positions[target].y, progress: 0, alpha: 1 });
     }
-  });
 
-  packets.forEach(p => {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
-    ctx.fillStyle = `rgba(88,166,255,${p.alpha})`;
-    ctx.fill();
-  });
-}
+    function tickPackets() {
+      packets = packets.filter(p => {
+        p.progress += 0.12;
+        p.x = lerp(p.x, p.tx, 0.12);
+        p.y = lerp(p.y, p.ty, 0.12);
+        p.alpha = 1 - p.progress;
+        return p.progress < 1;
+      });
+    }
+    function lerp(a, b, t) { return a + (b - a) * t; }
 
-function spawnPacket(target) {
-  if (target < 0) return;
-  const canvas    = document.getElementById('network-canvas');
-  const positions = getServerPositions(canvas);
-  if (!positions[target]) return;
-  const cx = canvas.width/2, cy = canvas.height/2;
-  packets.push({ x:cx, y:cy, tx:positions[target].x, ty:positions[target].y, progress:0, alpha:1 });
-}
+    // ═══════════════════════════════════════════════════════
+    // UI UPDATES
+    // ═══════════════════════════════════════════════════════
+    function updateProgress(data) {
+      const step = data ? data.step : 0;
+      const pct = (step / NUM_STEPS * 100).toFixed(1);
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('step-label').textContent = `Step ${step} / ${NUM_STEPS}`;
+      document.getElementById('time-label').textContent =
+        startTime ? ((Date.now() - startTime) / 1000).toFixed(1) + 's elapsed' : '0.0s elapsed';
+      let phase = '—';
+      if (scenario === 'burst') {
+        if (step < 100) phase = 'Pre-burst (stable)';
+        else if (step < 150) phase = '⚡ Burst active';
+        else phase = 'Post-burst (recovery)';
+      } else if (scenario === 'adversarial') {
+        phase = step < 100 ? 'Pre-degradation' : '⚠ Adversarial active';
+      } else {
+        if (step < 50) phase = 'Warmup';
+        else if (step < 150) phase = 'Steady state';
+        else phase = 'Convergence';
+      }
+      document.getElementById('phase-label').textContent = phase;
+    }
 
-function tickPackets() {
-  packets = packets.filter(p => {
-    p.progress += 0.12;
-    p.x = lerp(p.x, p.tx, 0.12);
-    p.y = lerp(p.y, p.ty, 0.12);
-    p.alpha = 1 - p.progress;
-    return p.progress < 1;
-  });
-}
-function lerp(a, b, t) { return a + (b-a)*t; }
+    function updateMetrics(data) {
+      if (!data) {
+        ['m-rt', 'm-var', 'm-ent', 'm-reg'].forEach(id => document.getElementById(id).textContent = '—');
+        return;
+      }
+      document.getElementById('m-rt').textContent = data.actual_rt ? data.actual_rt.toFixed(0) : '—';
+      document.getElementById('m-var').textContent = data.variance != null ? data.variance.toFixed(1) : '—';
+      document.getElementById('m-ent').textContent = data.entropy != null ? data.entropy.toFixed(2) : '—';
+      document.getElementById('m-reg').textContent = data.regret ? data.regret.toFixed(0) : '—';
+      if (data.actual_rt) {
+        document.getElementById('m-rt-sub').textContent =
+          data.actual_rt < 800 ? '✓ Within target' : data.actual_rt < 1500 ? '~ Moderate load' : '⚠ High latency';
+      }
+      if (data.entropy != null) {
+        document.getElementById('m-ent-sub').textContent =
+          data.entropy > 1.8 ? 'Uniform distribution' :
+            data.entropy > 1.0 ? 'Moderate preference' : 'Strong preference';
+      }
+    }
 
-// ═══════════════════════════════════════════════════════
-// UI UPDATES
-// ═══════════════════════════════════════════════════════
-function updateProgress(data) {
-  const step = data ? data.step : 0;
-  const pct  = (step / NUM_STEPS * 100).toFixed(1);
-  document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('step-label').textContent    = `Step ${step} / ${NUM_STEPS}`;
-  document.getElementById('time-label').textContent    =
-    startTime ? ((Date.now()-startTime)/1000).toFixed(1)+'s elapsed' : '0.0s elapsed';
-  let phase = '—';
-  if (scenario === 'burst') {
-    if (step < 100)      phase = 'Pre-burst (stable)';
-    else if (step < 150) phase = '⚡ Burst active';
-    else                 phase = 'Post-burst (recovery)';
-  } else if (scenario === 'adversarial') {
-    phase = step < 100 ? 'Pre-degradation' : '⚠ Adversarial active';
-  } else {
-    if (step < 50)       phase = 'Warmup';
-    else if (step < 150) phase = 'Steady state';
-    else                 phase = 'Convergence';
-  }
-  document.getElementById('phase-label').textContent = phase;
-}
-
-function updateMetrics(data) {
-  if (!data) {
-    ['m-rt','m-var','m-ent','m-reg'].forEach(id => document.getElementById(id).textContent = '—');
-    return;
-  }
-  document.getElementById('m-rt').textContent  = data.actual_rt   ? data.actual_rt.toFixed(0)   : '—';
-  document.getElementById('m-var').textContent = data.variance    != null ? data.variance.toFixed(1) : '—';
-  document.getElementById('m-ent').textContent = data.entropy     != null ? data.entropy.toFixed(2)  : '—';
-  document.getElementById('m-reg').textContent = data.regret      ? data.regret.toFixed(0)       : '—';
-  if (data.actual_rt) {
-    document.getElementById('m-rt-sub').textContent =
-      data.actual_rt < 800 ? '✓ Within target' : data.actual_rt < 1500 ? '~ Moderate load' : '⚠ High latency';
-  }
-  if (data.entropy != null) {
-    document.getElementById('m-ent-sub').textContent =
-      data.entropy > 1.8 ? 'Uniform distribution' :
-      data.entropy > 1.0 ? 'Moderate preference' : 'Strong preference';
-  }
-}
-
-function buildServerCards() {
-  const names  = serverNames();
-  const colors = serverColors();
-  document.getElementById('server-grid').innerHTML = Array.from({length:numServers},(_,i)=>`
+    function buildServerCards() {
+      const names = serverNames();
+      const colors = serverColors();
+      document.getElementById('server-grid').innerHTML = Array.from({ length: numServers }, (_, i) => `
     <div class="server-card" id="srv-card-${i}">
       <div class="srv-head">
         <div>
@@ -983,7 +1540,7 @@ function buildServerCards() {
         </div>
         <div class="bar-row">
           <div class="bar-top"><span class="bar-lbl">Route prob.</span><span class="bar-val" id="srv-prob-val-${i}">—</span></div>
-          <div class="bar-track"><div class="bar-fill prob-fill" id="srv-prob-${i}" style="width:${(100/numServers).toFixed(1)}%"></div></div>
+          <div class="bar-track"><div class="bar-fill prob-fill" id="srv-prob-${i}" style="width:${(100 / numServers).toFixed(1)}%"></div></div>
         </div>
       </div>
       <div class="srv-stats">
@@ -992,190 +1549,204 @@ function buildServerCards() {
         <div class="stat">Queue: <span id="srv-queue-${i}">0</span></div>
         <div class="stat">Status: <span id="srv-state-${i}">ok</span></div>
       </div>
-      <!-- Total requests row -->
       <div class="srv-total-row">
         <span class="srv-total-label">Total Handled</span>
         <span class="srv-total-val" id="srv-total-${i}">0</span>
       </div>
     </div>`).join('');
-}
+    }
 
-function updateServerCards(data, probs, pheromones, selected, cooldown) {
-  if (!data || !data.servers) return;
-  const maxP = Math.max(...pheromones, 0.01);
-  const maxQ = Math.max(...data.servers.map(s => s.queue_len), 4);
+    function updateServerCards(data, probs, pheromones, selected, cooldown) {
+      if (!data || !data.servers) return;
+      const maxP = Math.max(...pheromones, 0.01);
+      const maxQ = Math.max(...data.servers.map(s => s.queue_len), 4);
 
-  data.servers.forEach((s, i) => {
-    const card = document.getElementById('srv-card-'+i);
-    if (!card) return;
-    card.className = 'server-card' +
-      (i === selected ? ' selected' : '') +
-      (cooldown[i]    ? ' cooldown' : '') +
-      (s.degraded     ? ' degraded' : '');
+      data.servers.forEach((s, i) => {
+        const card = document.getElementById('srv-card-' + i);
+        if (!card) return;
+        card.className = 'server-card' +
+          (i === selected ? ' selected' : '') +
+          (cooldown[i] ? ' cooldown' : '') +
+          (s.degraded ? ' degraded' : '');
 
-    const badge = document.getElementById('srv-status-'+i);
-    badge.textContent = cooldown[i] ? 'cooldown' : s.degraded ? 'degraded' : 'online';
-    badge.className   = 'srv-status ' + (cooldown[i] ? 'cooldown' : s.degraded ? 'degraded' : 'online');
+        const badge = document.getElementById('srv-status-' + i);
+        badge.textContent = cooldown[i] ? 'cooldown' : s.degraded ? 'degraded' : 'online';
+        badge.className = 'srv-status ' + (cooldown[i] ? 'cooldown' : s.degraded ? 'degraded' : 'online');
 
-    document.getElementById('srv-id-'+i).textContent          = `srv-0${i} · rate ${s.service_rate.toFixed(2)}`;
-    document.getElementById('srv-pher-'+i).style.width         = (pheromones[i]/maxP*100).toFixed(1)+'%';
-    document.getElementById('srv-pher-val-'+i).textContent     = pheromones[i].toFixed(3);
-    document.getElementById('srv-q-'+i).style.width            = (s.queue_len/maxQ*100).toFixed(1)+'%';
-    document.getElementById('srv-q-val-'+i).textContent        = s.queue_len;
-    document.getElementById('srv-prob-'+i).style.width         = (probs[i]*100).toFixed(1)+'%';
-    document.getElementById('srv-prob-val-'+i).textContent     = (probs[i]*100).toFixed(1)+'%';
-    document.getElementById('srv-rt-'+i).textContent           = s.last_rt != null ? s.last_rt.toFixed(0)+'ms' : '—';
-    document.getElementById('srv-rate-'+i).textContent         = s.service_rate.toFixed(2);
-    document.getElementById('srv-queue-'+i).textContent        = s.queue_len;
-    document.getElementById('srv-state-'+i).textContent        = s.degraded ? '⚠ degraded' : cooldown[i] ? '🔴 cooldown' : '✓ ok';
-    // Total requests handled
-    document.getElementById('srv-total-'+i).textContent        = s.total_reqs ?? 0;
-  });
-}
+        document.getElementById('srv-id-' + i).textContent = `srv-0${i} · rate ${s.service_rate.toFixed(2)}`;
+        document.getElementById('srv-pher-' + i).style.width = (pheromones[i] / maxP * 100).toFixed(1) + '%';
+        document.getElementById('srv-pher-val-' + i).textContent = pheromones[i].toFixed(3);
+        document.getElementById('srv-q-' + i).style.width = (s.queue_len / maxQ * 100).toFixed(1) + '%';
+        document.getElementById('srv-q-val-' + i).textContent = s.queue_len;
+        document.getElementById('srv-prob-' + i).style.width = (probs[i] * 100).toFixed(1) + '%';
+        document.getElementById('srv-prob-val-' + i).textContent = (probs[i] * 100).toFixed(1) + '%';
+        document.getElementById('srv-rt-' + i).textContent = s.last_rt != null ? s.last_rt.toFixed(0) + 'ms' : '—';
+        document.getElementById('srv-rate-' + i).textContent = s.service_rate.toFixed(2);
+        document.getElementById('srv-queue-' + i).textContent = s.queue_len;
+        document.getElementById('srv-state-' + i).textContent = s.degraded ? '⚠ degraded' : cooldown[i] ? '🔴 cooldown' : '✓ ok';
+        document.getElementById('srv-total-' + i).textContent = s.total_reqs ?? 0;
+      });
+    }
 
-function buildPheroGrid() {
-  const names  = serverNames();
-  const colors = serverColors();
-  // Responsive columns: up to 4 per row
-  const cols = Math.min(numServers, 4);
-  document.getElementById('phero-grid').style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-  document.getElementById('phero-grid').innerHTML = Array.from({length:numServers},(_,i)=>`
+    function buildPheroGrid() {
+      const names = serverNames();
+      const colors = serverColors();
+      const cols = Math.min(numServers, 4);
+      document.getElementById('phero-grid').style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      document.getElementById('phero-grid').innerHTML = Array.from({ length: numServers }, (_, i) => `
     <div class="phero-cell">
       <div class="phero-circle" id="phero-circle-${i}">1.000</div>
       <div class="phero-label" style="color:${colors[i]}">${names[i]}</div>
-      <div class="phero-sublabel" id="phero-prob-${i}">${(100/numServers).toFixed(1)}%</div>
+      <div class="phero-sublabel" id="phero-prob-${i}">${(100 / numServers).toFixed(1)}%</div>
     </div>`).join('');
-}
-
-function updatePheroGrid(pheromones, probs, cooldown, degraded) {
-  const n = numServers;
-  pheromones = (pheromones||[]).slice(0,n);
-  probs      = (probs     ||[]).slice(0,n);
-  cooldown   = (cooldown  ||[]).slice(0,n);
-  degraded   = (degraded  ||[]).slice(0,n);
-  const maxP = Math.max(...pheromones, 0.01);
-
-  pheromones.forEach((p, i) => {
-    const norm = p / maxP;
-    const r = Math.round(30  + norm*60);
-    const g = Math.round(80  + norm*86);
-    const b = Math.round(150 + norm*105);
-    const bg  = `rgba(${r},${g},${b},${(0.15+norm*0.4).toFixed(2)})`;
-    const col = `rgb(${r+50},${g+30},${b})`;
-    const circle = document.getElementById('phero-circle-'+i);
-    if (!circle) return;
-    circle.style.background  = bg;
-    circle.style.color       = col;
-    circle.style.borderColor = cooldown[i] ? '#f85149' : degraded[i] ? '#d29922' : col;
-    circle.textContent       = p.toFixed(3);
-    const pl = document.getElementById('phero-prob-'+i);
-    if (pl) pl.textContent   = (probs[i]*100).toFixed(1)+'%';
-  });
-}
-
-// ── Charts ────────────────────────────────────────────
-const CHART_OPTS = () => ({
-  responsive: true, maintainAspectRatio: false, animation: false,
-  plugins: { legend: { display: false } },
-  scales: {
-    x: { display: false },
-    y: {
-      ticks: { color:'#484f58', font:{size:9}, maxTicksLimit:4 },
-      grid:  { color:'rgba(255,255,255,0.04)' },
-      border:{ display:false }
     }
-  }
-});
 
-function initCharts() {
-  if (chartRt)  chartRt.destroy();
-  if (chartVe)  chartVe.destroy();
-  if (chartReg) chartReg.destroy();
+    function updatePheroGrid(pheromones, probs, cooldown, degraded) {
+      const n = numServers;
+      pheromones = (pheromones || []).slice(0, n);
+      probs = (probs || []).slice(0, n);
+      cooldown = (cooldown || []).slice(0, n);
+      degraded = (degraded || []).slice(0, n);
+      const maxP = Math.max(...pheromones, 0.01);
 
-  chartRt = new Chart(document.getElementById('chart-rt'), {
-    type: 'line',
-    data: { labels:[], datasets:[{ data:[], borderColor:'#58a6ff', borderWidth:1.5, pointRadius:0,
-      fill:true, tension:0.3, backgroundColor:'rgba(88,166,255,0.06)' }] },
-    options: CHART_OPTS()
-  });
+      pheromones.forEach((p, i) => {
+        const norm = p / maxP;
+        const r = Math.round(30 + norm * 60);
+        const g = Math.round(80 + norm * 86);
+        const b = Math.round(150 + norm * 105);
+        const bg = `rgba(${r},${g},${b},${(0.15 + norm * 0.4).toFixed(2)})`;
+        const col = `rgb(${r + 50},${g + 30},${b})`;
+        const circle = document.getElementById('phero-circle-' + i);
+        if (!circle) return;
+        circle.style.background = bg;
+        circle.style.color = col;
+        circle.style.borderColor = cooldown[i] ? '#f85149' : degraded[i] ? '#d29922' : col;
+        circle.textContent = p.toFixed(3);
+        const pl = document.getElementById('phero-prob-' + i);
+        if (pl) pl.textContent = (probs[i] * 100).toFixed(1) + '%';
+      });
+    }
 
-  chartVe = new Chart(document.getElementById('chart-ve'), {
-    type: 'line',
-    data: { labels:[], datasets:[
-      { data:[], borderColor:'#f85149', borderWidth:1.5, pointRadius:0, fill:false, tension:0.3, label:'Variance' },
-      { data:[], borderColor:'#bc8cff', borderWidth:1.5, pointRadius:0, fill:false, tension:0.3, borderDash:[4,3], label:'Entropy' }
-    ]},
-    options: { ...CHART_OPTS(), plugins:{ legend:{ display:true,
-      labels:{ color:'#484f58', font:{size:9}, boxWidth:10, padding:8 } } } }
-  });
+    // ── Charts ────────────────────────────────────────────
+    const CHART_OPTS = () => ({
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { display: false },
+        y: {
+          ticks: { color: '#484f58', font: { size: 9 }, maxTicksLimit: 4 },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { display: false }
+        }
+      }
+    });
 
-  chartReg = new Chart(document.getElementById('chart-reg'), {
-    type: 'line',
-    data: { labels:[], datasets:[{ data:[], borderColor:'#d29922', borderWidth:1.5, pointRadius:0,
-      fill:true, tension:0.3, backgroundColor:'rgba(210,153,34,0.06)' }] },
-    options: CHART_OPTS()
-  });
-}
+    function initCharts() {
+      if (chartRt) chartRt.destroy();
+      if (chartVe) chartVe.destroy();
+      if (chartReg) chartReg.destroy();
 
-function updateCharts() {
-  if (!chartRt) return;
-  const MAX_PTS = 100;
-  const stride  = Math.max(1, Math.floor(rtHistory.length / MAX_PTS));
-  const rtD  = rtHistory.filter((_,i)     => i%stride===0).slice(-MAX_PTS);
-  const varD = varHistory.filter((_,i)    => i%stride===0).slice(-MAX_PTS);
-  const entD = entHistory.filter((_,i)    => i%stride===0).slice(-MAX_PTS);
-  const regD = regretHistory.filter((_,i) => i%stride===0).slice(-MAX_PTS);
-  const lbls = rtD.map((_,i) => i);
+      chartRt = new Chart(document.getElementById('chart-rt'), {
+        type: 'line',
+        data: {
+          labels: [], datasets: [{
+            data: [], borderColor: '#58a6ff', borderWidth: 1.5, pointRadius: 0,
+            fill: true, tension: 0.3, backgroundColor: 'rgba(88,166,255,0.06)'
+          }]
+        },
+        options: CHART_OPTS()
+      });
 
-  chartRt.data.labels           = lbls;
-  chartRt.data.datasets[0].data = rtD;
-  chartRt.update('none');
+      chartVe = new Chart(document.getElementById('chart-ve'), {
+        type: 'line',
+        data: {
+          labels: [], datasets: [
+            { data: [], borderColor: '#f85149', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3, label: 'Variance' },
+            { data: [], borderColor: '#bc8cff', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3, borderDash: [4, 3], label: 'Entropy' }
+          ]
+        },
+        options: {
+          ...CHART_OPTS(), plugins: {
+            legend: {
+              display: true,
+              labels: { color: '#484f58', font: { size: 9 }, boxWidth: 10, padding: 8 }
+            }
+          }
+        }
+      });
 
-  chartVe.data.labels              = lbls;
-  chartVe.data.datasets[0].data    = varD.slice(-lbls.length);
-  chartVe.data.datasets[1].data    = entD.slice(-lbls.length);
-  chartVe.update('none');
+      chartReg = new Chart(document.getElementById('chart-reg'), {
+        type: 'line',
+        data: {
+          labels: [], datasets: [{
+            data: [], borderColor: '#d29922', borderWidth: 1.5, pointRadius: 0,
+            fill: true, tension: 0.3, backgroundColor: 'rgba(210,153,34,0.06)'
+          }]
+        },
+        options: CHART_OPTS()
+      });
+    }
 
-  chartReg.data.labels             = regD.map((_,i) => i);
-  chartReg.data.datasets[0].data   = regD;
-  chartReg.update('none');
-}
+    function updateCharts() {
+      if (!chartRt) return;
+      const MAX_PTS = 100;
+      const stride = Math.max(1, Math.floor(rtHistory.length / MAX_PTS));
+      const rtD = rtHistory.filter((_, i) => i % stride === 0).slice(-MAX_PTS);
+      const varD = varHistory.filter((_, i) => i % stride === 0).slice(-MAX_PTS);
+      const entD = entHistory.filter((_, i) => i % stride === 0).slice(-MAX_PTS);
+      const regD = regretHistory.filter((_, i) => i % stride === 0).slice(-MAX_PTS);
+      const lbls = rtD.map((_, i) => i);
 
-// ── Log ───────────────────────────────────────────────
-function addLog(t, type, msg) {
-  const body   = document.getElementById('log-body');
-  const colors = { info:'#58a6ff', warn:'#d29922', err:'#f85149', ok:'#3fb950' };
-  const div    = document.createElement('div');
-  div.className = 'log-entry';
-  div.innerHTML = `<span class="log-t">t=${String(t).padStart(3,'0')}</span>
-    <div class="log-dot" style="background:${colors[type]||'#484f58'}"></div>
+      chartRt.data.labels = lbls;
+      chartRt.data.datasets[0].data = rtD;
+      chartRt.update('none');
+
+      chartVe.data.labels = lbls;
+      chartVe.data.datasets[0].data = varD.slice(-lbls.length);
+      chartVe.data.datasets[1].data = entD.slice(-lbls.length);
+      chartVe.update('none');
+
+      chartReg.data.labels = regD.map((_, i) => i);
+      chartReg.data.datasets[0].data = regD;
+      chartReg.update('none');
+    }
+
+    // ── Log ───────────────────────────────────────────────
+    function addLog(t, type, msg) {
+      const body = document.getElementById('log-body');
+      const colors = { info: '#58a6ff', warn: '#d29922', err: '#f85149', ok: '#3fb950' };
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.innerHTML = `<span class="log-t">t=${String(t).padStart(3, '0')}</span>
+    <div class="log-dot" style="background:${colors[type] || '#484f58'}"></div>
     <span class="log-msg ${type}">${msg}</span>`;
-  body.prepend(div);
-  while (body.children.length > 50) body.removeChild(body.lastChild);
-}
-function clearLog() { document.getElementById('log-body').innerHTML = ''; }
+      body.prepend(div);
+      while (body.children.length > 50) body.removeChild(body.lastChild);
+    }
+    function clearLog() { document.getElementById('log-body').innerHTML = ''; }
 
-function showBanner(type, msg) {
-  const b = document.getElementById('scenario-banner');
-  b.textContent = msg;
-  b.className   = 'scenario-banner show ' + type;
-  setTimeout(() => b.classList.remove('show'), 3000);
-}
+    function showBanner(type, msg) {
+      const b = document.getElementById('scenario-banner');
+      b.textContent = msg;
+      b.className = 'scenario-banner show ' + type;
+      setTimeout(() => b.classList.remove('show'), 3000);
+    }
 
-window.addEventListener('resize', () => {
-  if (lastState) {
-    const probs  = lastState.probabilities || Array(numServers).fill(1/numServers);
-    const phero  = lastState.pheromones    || Array(numServers).fill(1);
-    const sel    = lastState.selected_server ?? -1;
-    const cool   = phero.map(p => p <= 0.015);
-    const deg    = (lastState.servers||[]).map(s => !!s.degraded);
-    drawNetwork(probs, phero, sel, cool, deg);
-  } else {
-    drawNetwork();
-  }
-});
-
-initSim();
-</script>
+    window.addEventListener('resize', () => {
+      if (lastState) {
+        const probs = lastState.probabilities || Array(numServers).fill(1 / numServers);
+        const phero = lastState.pheromones || Array(numServers).fill(1);
+        const sel = lastState.selected_server ?? -1;
+        const cool = phero.map(p => p <= 0.015);
+        const deg = (lastState.servers || []).map(s => !!s.degraded);
+        drawNetwork(probs, phero, sel, cool, deg);
+      } else {
+        drawNetwork();
+      }
+    });
+    window.addEventListener('beforeunload', () => console.log('PAGE IS RELOADING'));
+    initSim();
+  </script>
 </body>
+
 </html>
